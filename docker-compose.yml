@@ -1,0 +1,60 @@
+version: '2.4'
+
+services:
+  node:
+    build:
+      context: .
+      args:
+        - NODE_ENV=development
+    ports:
+      - '4000:4000'
+    volumes:
+      - .:/node_app/app:delegated
+      # bind-mounting these two files in will let you add packages during development without rebuilding
+      # for example, to add bower to your app while developing, just install it inside the container
+      # and then nodemon will restart. Your changes will last until you "docker-compose down" and will
+      # be saved on host for next build
+      # NOTE: this won't work on Docker Toolbox (virtualbox) which doesn't bind-mount single files
+      # docker-compose exec node npm install --save bower
+      - ./package.json:/node_app/package.json
+      - ./package-lock.json:/node_app/package-lock.json
+      # prevent host node_modules from accidently getting mounted in container
+      # in case you want to use node/npm both outside container for test/lint etc. and also inside container
+      # this will overwrite the default node_modules dir in container so it won't conflict with our
+      # /node_app/node_modules location.
+      - notused:/node_app/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+    depends_on:
+      - postgres
+      - redis
+    # Using legacy poll option because of issues with restarting on Windows
+    # https://github.com/remy/nodemon#application-isnt-restarting
+    # ts-node-dev has the same issue as nodemon
+    command: ../node_modules/.bin/ts-node-dev --respawn --debug --poll --interval 3000 ./src/index.ts
+
+  redis:
+    image: 'bitnami/redis:latest'
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisData:/bitnami/redis/data
+
+  postgres:
+    image: postgres:alpine
+    environment:
+      POSTGRES_PASSWORD: ${TYPEORM_PASSWORD}
+      POSTGRES_USER: ${TYPEORM_USERNAME}
+      POSTGRES_DB: ${TYPEORM_DATABASE}
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgData:/var/lib/postgresql/data
+
+volumes:
+  notused:
+  pgData:
+  redisData:
