@@ -1,8 +1,9 @@
-import { Resolver, Query, Arg, Mutation, Args, ArgsType, Field, Int, Ctx } from 'type-graphql';
+import { Resolver, Arg, Mutation, Args, ArgsType, Field, Ctx } from 'type-graphql';
 import { User } from '../entity/User';
 import { Length } from 'class-validator';
 import { ResolverContext } from '../types/ResolverContext';
 import { comparePasswords, hashPassword } from '../../utils/crypto';
+import { SESSION_COOKIE_NAME } from '../../config/envConfig';
 
 @ArgsType()
 class LoginInput {
@@ -56,16 +57,17 @@ export class AuthResolver {
     return user;
   }
 
-  @Query(() => User, { nullable: true })
-  async getUser(@Arg('id', () => Int) id: number): Promise<User | undefined | null> {
-    const user = User.findOne({ where: { id } });
+  @Mutation(() => Boolean)
+  logout(@Ctx() ctx: ResolverContext): Promise<Boolean> {
+    return new Promise((resolve, reject) => {
+      ctx.req.session!.destroy(error => {
+        if (error) {
+          return reject(false);
+        }
 
-    return user || null;
-  }
-
-  @Query(() => [User])
-  async getAllUsers(): Promise<User[] | undefined | []> {
-    const user = User.find();
-    return user || [];
+        ctx.res.clearCookie(SESSION_COOKIE_NAME);
+        return resolve(true);
+      });
+    });
   }
 }
