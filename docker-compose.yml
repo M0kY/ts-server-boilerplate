@@ -35,13 +35,13 @@ services:
     command: ../node_modules/.bin/ts-node-dev --respawn --debug --poll --interval 3000 ./src/index.ts
 
   redis:
-    image: 'bitnami/redis:latest'
+    image: 'redis:alpine'
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
       - '6379:6379'
     volumes:
-      - redisData:/bitnami/redis/data
+      - redisData:/data
 
   postgres:
     image: postgres:alpine
