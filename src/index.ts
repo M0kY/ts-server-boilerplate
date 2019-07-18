@@ -9,10 +9,11 @@ import { GraphQLServer, Options } from 'graphql-yoga';
 import { buildSchema } from 'type-graphql';
 import { createConnection } from 'typeorm';
 
-import { SERVER_PORT, GRAPHQL_ENDPOINT, SESSION_SECRET, NODE_ENV } from './config/envConfig';
+import { SERVER_PORT, GRAPHQL_ENDPOINT, SESSION_SECRET, NODE_ENV, SESSION_COOKIE_NAME } from './config/envConfig';
 import { corsOptions } from './middleware/corsMiddleware';
 import { redis } from './config/redis';
 import { USER_SESSION_PREFIX } from './constants/redisPrefixes';
+import { authChecker } from './middleware/authChecker';
 
 (async () => {
   let retries = 10;
@@ -35,6 +36,7 @@ import { USER_SESSION_PREFIX } from './constants/redisPrefixes';
   const schema = await buildSchema({
     resolvers: [__dirname + '/modules/resolvers/*.ts'],
     validate: false,
+    authChecker,
   });
 
   const server = new GraphQLServer({
@@ -58,7 +60,7 @@ import { USER_SESSION_PREFIX } from './constants/redisPrefixes';
         client: redis,
         prefix: USER_SESSION_PREFIX,
       }),
-      name: 'sid',
+      name: SESSION_COOKIE_NAME,
       secret: SESSION_SECRET,
       resave: false,
       rolling: true,
