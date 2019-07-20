@@ -36,12 +36,13 @@ services:
 
   redis:
     image: 'redis:alpine'
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
       - '6379:6379'
     volumes:
       - redisData:/data
+    sysctls:
+      net.core.somaxconn: 511
+    command: --requirepass ${REDIS_PASSWORD}
 
   postgres:
     image: postgres:alpine

@@ -34,7 +34,7 @@ import { authChecker } from './middleware/authChecker';
   }
 
   const schema = await buildSchema({
-    resolvers: [__dirname + '/modules/resolvers/*.ts'],
+    resolvers: [__dirname + '/modules/resolvers/!(*.test).?(ts|js)'],
     validate: false,
     authChecker,
   });
