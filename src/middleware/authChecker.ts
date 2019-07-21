@@ -4,7 +4,7 @@ import { User } from '../modules/entity/User';
 import { Role } from '../modules/types/Roles';
 
 export const authChecker: AuthChecker<ResolverContext> = async ({ context }, roles) => {
-  const user = await User.findOne(context.req.session!.userId);
+  const user = await User.findOne({ id: context.req.session!.userId });
   if (!user) {
     return false;
   }

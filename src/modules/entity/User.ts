@@ -22,6 +22,10 @@ export class User extends BaseEntity {
   @Column()
   username: string;
 
+  @Field()
+  @Column()
+  displayName: string;
+
   @Column()
   password: string;
 

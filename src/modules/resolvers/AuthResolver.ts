@@ -27,8 +27,9 @@ export class AuthResolver {
   async register(@Args() { username, email, password }: RegisterInput): Promise<User> {
     const hashedPassword = hashPassword(password);
     const user = await User.create({
-      username,
-      email,
+      username: username.toLowerCase(),
+      displayName: username,
+      email: email.toLowerCase(),
       password: hashedPassword,
     }).save();
     return user;
@@ -40,7 +41,9 @@ export class AuthResolver {
     @Arg('password') password: string,
     @Ctx() ctx: ResolverContext
   ): Promise<User | null> {
-    const user = await User.findOne({ where: { username } });
+    const user = await User.findOne({
+      where: [{ username: username.toLowerCase() }, { email: username.toLowerCase() }],
+    });
 
     if (!user) {
       return null;
