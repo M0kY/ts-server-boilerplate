@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
   CreateDateColumn,
 } from 'typeorm';
-import { Role } from '../types/Roles';
+import { Role } from '../../types/Roles';
 
 @ObjectType()
 @Entity()

@@ -1,7 +1,7 @@
 import { AuthChecker } from 'type-graphql';
-import { ResolverContext } from '../modules/types/ResolverContext';
+import { ResolverContext } from '../types/ResolverContext';
 import { User } from '../modules/entity/User';
-import { Role } from '../modules/types/Roles';
+import { Role } from '../types/Roles';
 
 export const authChecker: AuthChecker<ResolverContext> = async ({ context }, roles) => {
   const user = await User.findOne({ id: context.req.session!.userId });

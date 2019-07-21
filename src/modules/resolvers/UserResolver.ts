@@ -1,8 +1,8 @@
 import { Resolver, Query, Mutation, Field, Ctx, Authorized, InputType, Arg } from 'type-graphql';
 import { User } from '../entity/User';
-import { ResolverContext } from '../types/ResolverContext';
+import { ResolverContext } from '../../types/ResolverContext';
 import { hashPassword, comparePasswords } from '../../utils/crypto';
-import { Role } from '../types/Roles';
+import { Role } from '../../types/Roles';
 
 @InputType({ description: 'User profile data which can be updated' })
 class UpdateProfileInput implements Partial<User> {

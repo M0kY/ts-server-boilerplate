@@ -1,9 +1,11 @@
 import { Resolver, Arg, Mutation, Args, ArgsType, Field, Ctx } from 'type-graphql';
 import { User } from '../entity/User';
 import { Length } from 'class-validator';
-import { ResolverContext } from '../types/ResolverContext';
+import { ResolverContext } from '../../types/ResolverContext';
 import { comparePasswords, hashPassword } from '../../utils/crypto';
 import { SESSION_COOKIE_NAME } from '../../config/envConfig';
+import { sendMail } from '../../mails/mailer';
+import { MailTemplateType } from '../../types/Mailer';
 
 @ArgsType()
 class LoginInput {
@@ -32,6 +34,9 @@ export class AuthResolver {
       email: email.toLowerCase(),
       password: hashedPassword,
     }).save();
+
+    await sendMail(user.email, MailTemplateType.ACCOUNT_ACTIVATION, user);
+
     return user;
   }
 
