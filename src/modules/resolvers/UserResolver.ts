@@ -1,16 +1,12 @@
 import { Resolver, Query, Mutation, Field, Ctx, Authorized, InputType, Arg } from 'type-graphql';
 import { User } from '../entity/User';
-import { Length } from 'class-validator';
 import { ResolverContext } from '../types/ResolverContext';
-import { hashPassword } from '../../utils/crypto';
+import { hashPassword, comparePasswords } from '../../utils/crypto';
 import { Role } from '../types/Roles';
 
 @InputType({ description: 'User profile data which can be updated' })
 class UpdateProfileInput implements Partial<User> {
   [key: string]: string;
-  @Field({ nullable: true })
-  @Length(8, 72)
-  password: string;
 
   @Field({ nullable: true })
   email: string;
@@ -40,10 +36,32 @@ export class UserResolver {
   }
 
   @Mutation(() => User, { nullable: true })
+  async changePassword(
+    @Arg('oldPassword') oldPassword: string,
+    @Arg('newPassword') newPassword: string,
+    @Ctx() ctx: ResolverContext
+  ): Promise<User | null> {
+    const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
+
+    if (!user) {
+      return null;
+    }
+
+    if (!comparePasswords(oldPassword, user.password)) {
+      return null;
+    }
+
+    user.password = hashPassword(newPassword);
+    await user.save();
+
+    return user;
+  }
+
+  @Mutation(() => User, { nullable: true })
   async updateProfile(
     @Arg('data') updateProfileData: UpdateProfileInput,
     @Ctx() ctx: ResolverContext
-  ): Promise<User | null> {
+  ): Promise<User | null | Error> {
     const user: any = await User.findOne({ where: { id: ctx.req.session!.userId } });
 
     if (!user) {
@@ -51,15 +69,12 @@ export class UserResolver {
     }
 
     Object.keys(updateProfileData).forEach(key => {
-      if (key === 'password') {
-        user[key] = hashPassword(updateProfileData[key]);
-      } else {
-        user[key] = updateProfileData[key];
-      }
+      user[key] = updateProfileData[key];
     });
 
-    user.save();
-
+    await user.save().catch((e: Error) => {
+      throw e;
+    });
     return user;
   }
 }

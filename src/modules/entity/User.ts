@@ -1,9 +1,18 @@
 import { ObjectType, Field, ID } from 'type-graphql';
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  BaseEntity,
+  Unique,
+  UpdateDateColumn,
+  CreateDateColumn,
+} from 'typeorm';
 import { Role } from '../types/Roles';
 
 @ObjectType()
 @Entity()
+@Unique(['username', 'email'])
 export class User extends BaseEntity {
   @Field(() => ID)
   @PrimaryGeneratedColumn({ type: 'integer' })
@@ -35,4 +44,16 @@ export class User extends BaseEntity {
   @Field()
   @Column({ default: false })
   active: boolean;
+
+  @Field()
+  @Column({ default: false })
+  locked: boolean;
+
+  @Field(() => Date)
+  @CreateDateColumn()
+  createdAt: string;
+
+  @Field(() => Date)
+  @UpdateDateColumn()
+  updatedAt: string;
 }
