@@ -6,7 +6,7 @@ const mailContent = async (userId: number) => {
   await redis.set(activationToken, userId, 'ex', 60 * 60 * 24); // 1 day
 
   // TODO change hardcoded url
-  return `<p>Activation code: http://localhost:3000/activate/${activationToken}</p>`;
+  return `<p>Activation code: http://localhost:3000/activate/${userId}/${activationToken}</p>`;
 };
 
 module.exports = {

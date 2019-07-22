@@ -47,7 +47,7 @@ export class User extends BaseEntity {
 
   @Field()
   @Column({ default: false })
-  active: boolean;
+  activated: boolean;
 
   @Field()
   @Column({ default: false })

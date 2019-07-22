@@ -1,4 +1,4 @@
-import { Resolver, Arg, Mutation, Args, ArgsType, Field, Ctx } from 'type-graphql';
+import { Resolver, Arg, Mutation, Args, ArgsType, Field, Ctx, ObjectType, ID } from 'type-graphql';
 import { User } from '../entity/User';
 import { Length } from 'class-validator';
 import { ResolverContext } from '../../types/ResolverContext';
@@ -6,6 +6,15 @@ import { comparePasswords, hashPassword } from '../../utils/crypto';
 import { SESSION_COOKIE_NAME } from '../../config/envConfig';
 import { sendMail } from '../../mails/mailer';
 import { MailTemplateType } from '../../types/Mailer';
+import { redis } from '../../config/redis';
+
+@ObjectType()
+class ActivationData {
+  @Field(() => ID)
+  id: string;
+  @Field(() => Boolean)
+  activated: boolean;
+}
 
 @ArgsType()
 class LoginInput {
@@ -77,5 +86,39 @@ export class AuthResolver {
         return resolve(true);
       });
     });
+  }
+
+  @Mutation(() => ActivationData)
+  async activate(@Arg('userId', () => ID) userId: string, @Arg('token') token: string): Promise<ActivationData> {
+    const id = await redis.get(token);
+    const user = await User.findOne({ id: parseInt(userId, 10) });
+
+    if (!id || id !== userId) {
+      throw new Error('Invalid token');
+    }
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (user.activated) {
+      throw new Error('User already active');
+    }
+
+    user.activated = true;
+    await user.save();
+    await redis.del(token);
+
+    return { id: userId, activated: user.activated };
+  }
+
+  @Mutation(() => Boolean)
+  async resendActivationLink(@Arg('email') email: string): Promise<Boolean> {
+    const user = await User.findOne({ email });
+    if (user) {
+      await sendMail(user.email, MailTemplateType.ACCOUNT_ACTIVATION, user);
+    }
+
+    return true;
   }
 }
