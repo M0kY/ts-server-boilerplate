@@ -7,6 +7,7 @@ import { SESSION_COOKIE_NAME } from '../../config/envConfig';
 import { sendMail } from '../../mails/mailer';
 import { MailTemplateType } from '../../types/Mailer';
 import { redis } from '../../config/redis';
+import { USER_ACTIVATION_PREFIX } from '../../constants/redisPrefixes';
 
 @ObjectType()
 class ActivationData {
@@ -90,7 +91,7 @@ export class AuthResolver {
 
   @Mutation(() => ActivationData)
   async activate(@Arg('userId', () => ID) userId: string, @Arg('token') token: string): Promise<ActivationData> {
-    const id = await redis.get(token);
+    const id = await redis.get(USER_ACTIVATION_PREFIX + token);
     const user = await User.findOne({ id: parseInt(userId, 10) });
 
     if (!id || id !== userId) {
@@ -107,7 +108,7 @@ export class AuthResolver {
 
     user.activated = true;
     await user.save();
-    await redis.del(token);
+    await redis.del(USER_ACTIVATION_PREFIX + token);
 
     return { id: userId, activated: user.activated };
   }
