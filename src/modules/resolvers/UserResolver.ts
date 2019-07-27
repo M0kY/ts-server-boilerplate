@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Field, Ctx, Authorized, InputType, Arg } from 'type-graphql';
+import { Resolver, Query, Mutation, Field, Ctx, Authorized, InputType, Arg, ID, ObjectType } from 'type-graphql';
 import { User } from '../entity/User';
 import { ResolverContext } from '../../types/ResolverContext';
 import { hashPassword, comparePasswords } from '../../utils/crypto';
@@ -18,6 +18,14 @@ class UpdateProfileInput implements Partial<User> {
   lastName: string;
 }
 
+@ObjectType()
+class ChangePasswordData {
+  @Field(() => ID)
+  id: string;
+  @Field(() => Boolean)
+  passwordChanged: boolean;
+}
+
 @Resolver(User)
 export class UserResolver {
   @Authorized()
@@ -35,12 +43,12 @@ export class UserResolver {
     return user || [];
   }
 
-  @Mutation(() => User, { nullable: true })
+  @Mutation(() => ChangePasswordData, { nullable: true })
   async changePassword(
     @Arg('oldPassword') oldPassword: string,
     @Arg('newPassword') newPassword: string,
     @Ctx() ctx: ResolverContext
-  ): Promise<User | null> {
+  ): Promise<ChangePasswordData | null> {
     const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
 
     if (!user) {
@@ -54,7 +62,7 @@ export class UserResolver {
     user.password = hashPassword(newPassword);
     await user.save();
 
-    return user;
+    return { id: user.id.toString(), passwordChanged: true };
   }
 
   @Mutation(() => User, { nullable: true })

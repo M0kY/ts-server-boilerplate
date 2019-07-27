@@ -7,7 +7,7 @@ import { SESSION_COOKIE_NAME } from '../../config/envConfig';
 import { sendMail } from '../../mails/mailer';
 import { MailTemplateType } from '../../types/Mailer';
 import { redis } from '../../config/redis';
-import { USER_ACTIVATION_PREFIX } from '../../constants/redisPrefixes';
+import { USER_ACTIVATION_PREFIX, USER_RESET_PASSWORD_PREFIX } from '../../constants/redisPrefixes';
 
 @ObjectType()
 class ActivationData {
@@ -31,6 +31,27 @@ class LoginInput {
 class RegisterInput extends LoginInput {
   @Field()
   email: string;
+}
+
+@ArgsType()
+class ResetPasswordInput {
+  @Field(() => ID)
+  userId: string;
+
+  @Field()
+  resetToken: string;
+
+  @Field()
+  @Length(8, 72)
+  newPassword: string;
+}
+
+@ObjectType()
+class ResetPasswordData {
+  @Field(() => ID)
+  id: string;
+  @Field(() => Boolean)
+  passwordUpdated: boolean;
 }
 
 @Resolver(User)
@@ -78,14 +99,18 @@ export class AuthResolver {
   @Mutation(() => Boolean)
   logout(@Ctx() ctx: ResolverContext): Promise<Boolean> {
     return new Promise((resolve, reject) => {
-      ctx.req.session!.destroy(error => {
-        if (error) {
-          return reject(false);
-        }
+      if (!ctx.req.session!.userId) {
+        resolve(false);
+      } else {
+        ctx.req.session!.destroy(error => {
+          if (error) {
+            return reject(false);
+          }
 
-        ctx.res.clearCookie(SESSION_COOKIE_NAME);
-        return resolve(true);
-      });
+          ctx.res.clearCookie(SESSION_COOKIE_NAME);
+          return resolve(true);
+        });
+      }
     });
   }
 
@@ -121,5 +146,35 @@ export class AuthResolver {
     }
 
     return true;
+  }
+
+  @Mutation(() => Boolean)
+  async resetPasswordRequest(@Arg('email') email: string): Promise<Boolean> {
+    const user = await User.findOne({ email });
+    if (user) {
+      await sendMail(user.email, MailTemplateType.PASSWORD_RESET, user);
+    }
+
+    return true;
+  }
+
+  @Mutation(() => ResetPasswordData)
+  async resetPassword(@Args() { userId, resetToken, newPassword }: ResetPasswordInput): Promise<ResetPasswordData> {
+    const id = await redis.get(USER_RESET_PASSWORD_PREFIX + resetToken);
+    const user = await User.findOne({ id: parseInt(userId, 10) });
+
+    if (!id || id !== userId) {
+      throw new Error('Invalid token');
+    }
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    user.password = hashPassword(newPassword);
+    await user.save();
+    await redis.del(USER_RESET_PASSWORD_PREFIX + resetToken);
+
+    return { id: userId, passwordUpdated: true };
   }
 }

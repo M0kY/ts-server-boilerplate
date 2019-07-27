@@ -48,9 +48,8 @@ import { authChecker } from './middleware/authChecker';
     }),
   });
 
-  server.express.use(compression());
   server.express.use(helmet());
-  server.express.disable('x-powered-by');
+  server.express.use(compression());
   server.express.use(cors(corsOptions));
 
   const RedisStore = connectRedis(session);
