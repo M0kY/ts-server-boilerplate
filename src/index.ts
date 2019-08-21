@@ -5,33 +5,21 @@ import helmet from 'helmet';
 import compression from 'compression';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
-import { GraphQLServer, Options } from 'graphql-yoga';
+import express from 'express';
+import { ApolloServer } from 'apollo-server-express';
 import { buildSchema } from 'type-graphql';
-import { createConnection } from 'typeorm';
 
+import { databaseConnection } from './database/connection';
 import { SERVER_PORT, GRAPHQL_ENDPOINT, SESSION_SECRET, NODE_ENV, SESSION_COOKIE_NAME } from './config/envConfig';
 import { corsOptions } from './middleware/corsMiddleware';
 import { redis } from './config/redis';
 import { USER_SESSION_PREFIX } from './constants/redisPrefixes';
 import { authChecker } from './middleware/authChecker';
 
+const app = express();
+
 (async () => {
-  let retries = 10;
-  while (retries) {
-    try {
-      console.log('Connecting to DB...');
-      await createConnection();
-      console.log('Successfully connected to DB');
-      break;
-    } catch (error) {
-      console.log(error);
-      retries -= 1;
-      console.log(`Connection to DB failed: ${retries} retries remaining...`);
-      await new Promise(res => {
-        setTimeout(res, 5000);
-      });
-    }
-  }
+  await databaseConnection();
 
   const schema = await buildSchema({
     resolvers: [__dirname + '/modules/resolvers/!(*.test).?(ts|js)'],
@@ -39,21 +27,21 @@ import { authChecker } from './middleware/authChecker';
     authChecker,
   });
 
-  const server = new GraphQLServer({
+  const server = new ApolloServer({
     schema,
-    context: ({ request, response }) => ({
-      session: request ? request.session : undefined,
-      req: request,
-      res: response,
+    context: ({ req, res }) => ({
+      session: req ? req.session : undefined,
+      req,
+      res,
     }),
   });
 
-  server.express.use(helmet());
-  server.express.use(compression());
-  server.express.use(cors(corsOptions));
+  app.use(helmet());
+  app.use(compression());
+  app.use(cors(corsOptions));
 
   const RedisStore = connectRedis(session);
-  server.express.use(
+  app.use(
     session({
       store: new RedisStore({
         client: redis,
@@ -72,11 +60,9 @@ import { authChecker } from './middleware/authChecker';
     })
   );
 
-  const options: Options = {
-    port: SERVER_PORT,
-    endpoint: GRAPHQL_ENDPOINT,
-    playground: GRAPHQL_ENDPOINT,
-  };
+  server.applyMiddleware({ app, path: GRAPHQL_ENDPOINT });
 
-  server.start(options, ({ port }) => console.log(`Server is running on port ${port}.`));
+  app.listen({ port: SERVER_PORT }, () =>
+    console.log(`Server is running on http://localhost:4000${server.graphqlPath}.`)
+  );
 })();
