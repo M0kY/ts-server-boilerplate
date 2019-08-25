@@ -3,6 +3,7 @@ import { User } from '../entity/User';
 import { ResolverContext } from '../../types/ResolverContext';
 import { hashPassword, comparePasswords } from '../../utils/crypto';
 import { Role } from '../../types/Roles';
+import { AuthenticationError, UserInputError, ApolloError } from 'apollo-server-errors';
 
 @InputType({ description: 'User profile data which can be updated' })
 class UpdateProfileInput implements Partial<User> {
@@ -30,33 +31,39 @@ class ChangePasswordData {
 export class UserResolver {
   @Authorized()
   @Query(() => User, { nullable: true })
-  async me(@Ctx() ctx: ResolverContext): Promise<User | undefined | null> {
+  async me(@Ctx() ctx: ResolverContext): Promise<User> {
     const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
 
-    return user || null;
+    if (!user) {
+      throw new AuthenticationError('User not found');
+    }
+
+    return user;
   }
 
   @Authorized(Role.ADMIN)
   @Query(() => [User])
-  async getAllUsers(): Promise<User[] | undefined | []> {
+  async getAllUsers(): Promise<User[]> {
     const user = await User.find();
     return user || [];
   }
 
   @Mutation(() => ChangePasswordData, { nullable: true })
   async changePassword(
-    @Arg('oldPassword') oldPassword: string,
+    @Arg('currentPassword') currentPassword: string,
     @Arg('newPassword') newPassword: string,
     @Ctx() ctx: ResolverContext
-  ): Promise<ChangePasswordData | null> {
+  ): Promise<ChangePasswordData> {
     const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
 
     if (!user) {
-      return null;
+      throw new AuthenticationError('User not found');
     }
 
-    if (!comparePasswords(oldPassword, user.password)) {
-      return null;
+    if (!comparePasswords(currentPassword, user.password)) {
+      throw new UserInputError('Incorrect current password value.', {
+        invalidArgument: 'currentPassword',
+      });
     }
 
     user.password = hashPassword(newPassword);
@@ -66,14 +73,11 @@ export class UserResolver {
   }
 
   @Mutation(() => User, { nullable: true })
-  async updateProfile(
-    @Arg('data') updateProfileData: UpdateProfileInput,
-    @Ctx() ctx: ResolverContext
-  ): Promise<User | null | Error> {
+  async updateProfile(@Arg('data') updateProfileData: UpdateProfileInput, @Ctx() ctx: ResolverContext): Promise<User> {
     const user: any = await User.findOne({ where: { id: ctx.req.session!.userId } });
 
     if (!user) {
-      return null;
+      throw new AuthenticationError('User not found');
     }
 
     Object.keys(updateProfileData).forEach(key => {
@@ -81,7 +85,7 @@ export class UserResolver {
     });
 
     await user.save().catch((e: Error) => {
-      throw e;
+      throw new ApolloError(e.message, 'ERROR_WHILE_UPDATING_USER');
     });
     return user;
   }

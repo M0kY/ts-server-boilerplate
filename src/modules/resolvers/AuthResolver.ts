@@ -1,6 +1,7 @@
 import { Resolver, Arg, Mutation, Args, ArgsType, Field, Ctx, ObjectType, ID } from 'type-graphql';
-import { User } from '../entity/User';
 import { Length } from 'class-validator';
+import { AuthenticationError, ForbiddenError } from 'apollo-server-errors';
+import { User } from '../entity/User';
 import { ResolverContext } from '../../types/ResolverContext';
 import { comparePasswords, hashPassword } from '../../utils/crypto';
 import { SESSION_COOKIE_NAME } from '../../config/envConfig';
@@ -82,13 +83,13 @@ export class AuthResolver {
     });
 
     if (!user) {
-      return null;
+      throw new AuthenticationError('Invalid username or password');
     }
 
     const valid = comparePasswords(password, user.password);
 
     if (!valid) {
-      return null;
+      throw new AuthenticationError('Invalid username or password');
     }
 
     ctx.req.session!.userId = user.id;
@@ -100,7 +101,7 @@ export class AuthResolver {
   logout(@Ctx() ctx: ResolverContext): Promise<Boolean> {
     return new Promise((resolve, reject) => {
       if (!ctx.req.session!.userId) {
-        resolve(false);
+        throw new AuthenticationError('Not logged in');
       } else {
         ctx.req.session!.destroy(error => {
           if (error) {
@@ -120,15 +121,15 @@ export class AuthResolver {
     const user = await User.findOne({ id: parseInt(userId, 10) });
 
     if (!id || id !== userId) {
-      throw new Error('Invalid token');
+      throw new AuthenticationError('Invalid token');
     }
 
     if (!user) {
-      throw new Error('User not found');
+      throw new AuthenticationError('User not found');
     }
 
     if (user.activated) {
-      throw new Error('User already active');
+      throw new ForbiddenError('User already active');
     }
 
     user.activated = true;
@@ -164,11 +165,11 @@ export class AuthResolver {
     const user = await User.findOne({ id: parseInt(userId, 10) });
 
     if (!id || id !== userId) {
-      throw new Error('Invalid token');
+      throw new AuthenticationError('Invalid token');
     }
 
     if (!user) {
-      throw new Error('User not found');
+      throw new AuthenticationError('User not found');
     }
 
     user.password = hashPassword(newPassword);

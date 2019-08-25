@@ -5,9 +5,9 @@ import helmet from 'helmet';
 import compression from 'compression';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { ApolloServer } from 'apollo-server-express';
-import { buildSchema } from 'type-graphql';
+import { buildSchema, ArgumentValidationError } from 'type-graphql';
 
 import { databaseConnection } from './database/connection';
 import { SERVER_PORT, GRAPHQL_ENDPOINT, SESSION_SECRET, NODE_ENV, SESSION_COOKIE_NAME } from './config/envConfig';
@@ -15,6 +15,7 @@ import { corsOptions } from './middleware/corsMiddleware';
 import { redis } from './config/redis';
 import { USER_SESSION_PREFIX } from './constants/redisPrefixes';
 import { authChecker } from './middleware/authChecker';
+import { ERROR_CORS_REQUEST_BLOCKED, ERRORS } from './constants/errorCodes';
 
 const app = express();
 
@@ -23,7 +24,7 @@ const app = express();
 
   const schema = await buildSchema({
     resolvers: [__dirname + '/modules/resolvers/!(*.test).?(ts|js)'],
-    validate: false,
+    validate: { validationError: { target: false, value: false } },
     authChecker,
   });
 
@@ -34,11 +35,32 @@ const app = express();
       req,
       res,
     }),
+    formatError: error => {
+      if (error.originalError instanceof ArgumentValidationError) {
+        return {
+          key: 'ARGUMENT_VALIDATION_ERROR',
+          message: error.message,
+          path: error.path,
+          validationErrors: error.extensions!.exception.validationErrors,
+        };
+      }
+      return error;
+    },
   });
 
   app.use(helmet());
   app.use(compression());
   app.use(cors(corsOptions));
+
+  app.use(GRAPHQL_ENDPOINT, (err: any, _: Request, res: Response, next: NextFunction) => {
+    if (err.name === ERROR_CORS_REQUEST_BLOCKED) {
+      res.status(200).send({
+        errors: [JSON.parse(JSON.stringify({ ...ERRORS.ERROR_CORS_REQUEST_BLOCKED }))],
+      });
+      return;
+    }
+    next();
+  });
 
   const RedisStore = connectRedis(session);
   app.use(
