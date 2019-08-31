@@ -1,6 +1,5 @@
 import { Resolver, Arg, Mutation, Args, ArgsType, Field, Ctx, ObjectType, ID } from 'type-graphql';
 import { Length } from 'class-validator';
-import { AuthenticationError, ForbiddenError } from 'apollo-server-errors';
 import { User } from '../entity/User';
 import { ResolverContext } from '../../types/ResolverContext';
 import { comparePasswords, hashPassword } from '../../utils/crypto';
@@ -9,6 +8,7 @@ import { sendMail } from '../../mails/mailer';
 import { MailTemplateType } from '../../types/Mailer';
 import { redis } from '../../config/redis';
 import { USER_ACTIVATION_PREFIX, USER_RESET_PASSWORD_PREFIX } from '../../constants/redisPrefixes';
+import { CustomError, ERRORS } from '../../constants/errorCodes';
 
 @ObjectType()
 class ActivationData {
@@ -83,13 +83,13 @@ export class AuthResolver {
     });
 
     if (!user) {
-      throw new AuthenticationError('Invalid username or password');
+      throw new CustomError(ERRORS.ERROR_INVALID_LOGIN);
     }
 
     const valid = comparePasswords(password, user.password);
 
     if (!valid) {
-      throw new AuthenticationError('Invalid username or password');
+      throw new CustomError(ERRORS.ERROR_INVALID_LOGIN);
     }
 
     ctx.req.session!.userId = user.id;
@@ -101,7 +101,7 @@ export class AuthResolver {
   logout(@Ctx() ctx: ResolverContext): Promise<Boolean> {
     return new Promise((resolve, reject) => {
       if (!ctx.req.session!.userId) {
-        throw new AuthenticationError('Not logged in');
+        throw new CustomError(ERRORS.ERROR_USER_NOT_LOGGED_IN);
       } else {
         ctx.req.session!.destroy(error => {
           if (error) {
@@ -121,15 +121,15 @@ export class AuthResolver {
     const user = await User.findOne({ id: parseInt(userId, 10) });
 
     if (!id || id !== userId) {
-      throw new AuthenticationError('Invalid token');
+      throw new CustomError(ERRORS.ERROR_INVALID_TOKEN);
     }
 
     if (!user) {
-      throw new AuthenticationError('User not found');
+      throw new CustomError(ERRORS.ERROR_USER_NOT_FOUND);
     }
 
     if (user.activated) {
-      throw new ForbiddenError('User already active');
+      throw new CustomError(ERRORS.ERROR_USER_ALREDY_ACTIVE);
     }
 
     user.activated = true;
@@ -165,11 +165,11 @@ export class AuthResolver {
     const user = await User.findOne({ id: parseInt(userId, 10) });
 
     if (!id || id !== userId) {
-      throw new AuthenticationError('Invalid token');
+      throw new CustomError(ERRORS.ERROR_INVALID_TOKEN);
     }
 
     if (!user) {
-      throw new AuthenticationError('User not found');
+      throw new CustomError(ERRORS.ERROR_USER_NOT_FOUND);
     }
 
     user.password = hashPassword(newPassword);
