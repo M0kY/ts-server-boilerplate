@@ -16,6 +16,7 @@ import { redis } from './config/redis';
 import { USER_SESSION_PREFIX } from './constants/redisPrefixes';
 import { authChecker } from './middleware/authChecker';
 import { ERROR_CORS_REQUEST_BLOCKED, ERRORS } from './constants/errorCodes';
+import { ErrorCode } from './types/Error';
 
 const app = express();
 
@@ -38,13 +39,18 @@ const app = express();
     formatError: error => {
       if (error.originalError instanceof ArgumentValidationError) {
         return {
-          key: 'ARGUMENT_VALIDATION_ERROR',
+          key: ErrorCode.USER_INPUT_ERROR,
           message: error.message,
           path: error.path,
           validationErrors: error.extensions!.exception.validationErrors,
         };
       }
-      return error;
+      return {
+        key: ErrorCode.USER_INPUT_ERROR,
+        code: error.extensions!.exception.key,
+        message: error.message,
+        path: error.path,
+      };
     },
   });
 

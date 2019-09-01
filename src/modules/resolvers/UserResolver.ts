@@ -3,7 +3,13 @@ import { User } from '../entity/User';
 import { ResolverContext } from '../../types/ResolverContext';
 import { hashPassword, comparePasswords } from '../../utils/crypto';
 import { Role } from '../../types/Roles';
-import { AuthenticationError, UserInputError, ApolloError } from 'apollo-server-errors';
+import {
+  CustomError,
+  getErrorByKey,
+  ERROR_USER_NOT_FOUND,
+  ERROR_WHILE_UPDATING_USER,
+  ERROR_INVALID_PASSWORD_INPUT,
+} from '../../constants/errorCodes';
 
 @InputType({ description: 'User profile data which can be updated' })
 class UpdateProfileInput implements Partial<User> {
@@ -35,7 +41,7 @@ export class UserResolver {
     const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
 
     if (!user) {
-      throw new AuthenticationError('User not found');
+      throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
     }
 
     return user;
@@ -57,12 +63,13 @@ export class UserResolver {
     const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
 
     if (!user) {
-      throw new AuthenticationError('User not found');
+      throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
     }
 
     if (!comparePasswords(currentPassword, user.password)) {
-      throw new UserInputError('Incorrect current password value.', {
-        invalidArgument: 'currentPassword',
+      throw new CustomError({
+        ...getErrorByKey(ERROR_INVALID_PASSWORD_INPUT),
+        properties: { invalidArgument: 'currentPassword' },
       });
     }
 
@@ -77,15 +84,15 @@ export class UserResolver {
     const user: any = await User.findOne({ where: { id: ctx.req.session!.userId } });
 
     if (!user) {
-      throw new AuthenticationError('User not found');
+      throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
     }
 
     Object.keys(updateProfileData).forEach(key => {
       user[key] = updateProfileData[key];
     });
 
-    await user.save().catch((e: Error) => {
-      throw new ApolloError(e.message, 'ERROR_WHILE_UPDATING_USER');
+    await user.save().catch((_: Error) => {
+      throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
     });
     return user;
   }
