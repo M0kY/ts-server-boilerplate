@@ -1,4 +1,6 @@
 import { Resolver, Query, Mutation, Field, Ctx, Authorized, InputType, Arg, ID, ObjectType } from 'type-graphql';
+import { authenticator } from 'otplib';
+
 import { User } from '../entity/User';
 import { ResolverContext } from '../../types/ResolverContext';
 import { hashPassword, comparePasswords } from '../../utils/crypto';
@@ -9,7 +11,9 @@ import {
   ERROR_USER_NOT_FOUND,
   ERROR_WHILE_UPDATING_USER,
   ERROR_INVALID_PASSWORD_INPUT,
+  ERROR_INVALID_2FA_TOKEN,
 } from '../../constants/errorCodes';
+import { SERVICE_NAME } from '../../config/envConfig';
 
 @InputType({ description: 'User profile data which can be updated' })
 class UpdateProfileInput implements Partial<User> {
@@ -33,6 +37,16 @@ class ChangePasswordData {
   passwordChanged: boolean;
 }
 
+@ObjectType()
+class Activate2faData {
+  @Field()
+  secret: string;
+  @Field()
+  method: 'TOTP' | 'HOTP';
+  @Field()
+  uri: string;
+}
+
 @Resolver(User)
 export class UserResolver {
   @Authorized()
@@ -54,6 +68,7 @@ export class UserResolver {
     return user || [];
   }
 
+  @Authorized()
   @Mutation(() => ChangePasswordData, { nullable: true })
   async changePassword(
     @Arg('currentPassword') currentPassword: string,
@@ -79,6 +94,7 @@ export class UserResolver {
     return { id: user.id.toString(), passwordChanged: true };
   }
 
+  @Authorized()
   @Mutation(() => User, { nullable: true })
   async updateProfile(@Arg('data') updateProfileData: UpdateProfileInput, @Ctx() ctx: ResolverContext): Promise<User> {
     const user: any = await User.findOne({ where: { id: ctx.req.session!.userId } });
@@ -95,5 +111,56 @@ export class UserResolver {
       throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
     });
     return user;
+  }
+
+  @Authorized()
+  @Mutation(() => Activate2faData)
+  async activate2fa(@Ctx() ctx: ResolverContext): Promise<Activate2faData> {
+    const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
+
+    if (!user) {
+      throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
+    }
+
+    const secret = authenticator.generateSecret();
+
+    user.secret2fa = secret;
+
+    await user.save().catch((_: Error) => {
+      throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
+    });
+
+    const uri = authenticator.keyuri(user.email, SERVICE_NAME, secret);
+
+    return {
+      secret,
+      method: 'TOTP',
+      uri,
+    };
+  }
+
+  @Mutation(() => Boolean)
+  async verify2fa(@Arg('token') token: string, @Ctx() ctx: ResolverContext): Promise<Boolean> {
+    const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
+
+    if (!user) {
+      throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
+    }
+
+    const isValid = authenticator.verify({ token, secret: user.secret2fa });
+
+    if (!isValid) {
+      throw new CustomError(getErrorByKey(ERROR_INVALID_2FA_TOKEN));
+    }
+
+    if (!user.enabled2fa) {
+      user.enabled2fa = true;
+
+      await user.save().catch((_: Error) => {
+        throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
+      });
+    }
+
+    return true;
   }
 }

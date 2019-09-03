@@ -51,6 +51,13 @@ export class User extends BaseEntity {
 
   @Field()
   @Column({ default: false })
+  enabled2fa: boolean;
+
+  @Column({ nullable: true })
+  secret2fa: string;
+
+  @Field()
+  @Column({ default: false })
   locked: boolean;
 
   @Field(() => Date)

@@ -1,5 +1,6 @@
 export const NODE_ENV = process.env.NODE_ENV;
 export const SERVER_PORT = process.env.SERVER_PORT || 4000;
+export const SERVICE_NAME = process.env.SERVICE_NAME || 'ts-boilerplate-server';
 export const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT || '/graphql';
 export const PASSWORD_HMAC_SECRET = process.env.PASSWORD_HMAC_SECRET || 'DKk+7agASjKQum+RGXJvy#=4-VS&4a2k';
 export const SESSION_SECRET = process.env.SESSION_SECRET || 'rxESeBenb5EmxxCZjyWpWD5MXMSA35H9';
