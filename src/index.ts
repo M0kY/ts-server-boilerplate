@@ -39,15 +39,15 @@ const app = express();
     formatError: error => {
       if (error.originalError instanceof ArgumentValidationError) {
         return {
-          key: ErrorCode.USER_INPUT_ERROR,
+          code: ErrorCode.USER_INPUT_ERROR,
           message: error.message,
           path: error.path,
           validationErrors: error.extensions!.exception.validationErrors,
         };
       }
       return {
-        key: ErrorCode.USER_INPUT_ERROR,
-        code: error.extensions!.exception.key,
+        code: error.extensions!.code,
+        key: error.extensions!.exception.key,
         message: error.message,
         path: error.path,
       };
