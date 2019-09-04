@@ -12,6 +12,9 @@ import {
   ERROR_WHILE_UPDATING_USER,
   ERROR_INVALID_PASSWORD_INPUT,
   ERROR_INVALID_2FA_TOKEN,
+  ERROR_NO_2FA_SECRET,
+  ERROR_2FA_ALREADY_VERIFIED,
+  ERROR_2FA_NOT_ACTIVE,
 } from '../../constants/errorCodes';
 import { SERVICE_NAME } from '../../config/envConfig';
 
@@ -122,6 +125,10 @@ export class UserResolver {
       throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
     }
 
+    if (user.enabled2fa) {
+      throw new CustomError(getErrorByKey(ERROR_2FA_ALREADY_VERIFIED));
+    }
+
     const secret = authenticator.generateSecret();
 
     user.secret2fa = secret;
@@ -139,12 +146,21 @@ export class UserResolver {
     };
   }
 
+  @Authorized()
   @Mutation(() => Boolean)
-  async verify2fa(@Arg('token') token: string, @Ctx() ctx: ResolverContext): Promise<Boolean> {
+  async verifyOrDeactivate2fa(
+    @Arg('token') token: string,
+    @Arg('enable') enable: boolean,
+    @Ctx() ctx: ResolverContext
+  ): Promise<Boolean> {
     const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
 
     if (!user) {
       throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
+    }
+
+    if (!user.secret2fa) {
+      throw new CustomError(getErrorByKey(ERROR_NO_2FA_SECRET));
     }
 
     const isValid = authenticator.verify({ token, secret: user.secret2fa });
@@ -153,13 +169,24 @@ export class UserResolver {
       throw new CustomError(getErrorByKey(ERROR_INVALID_2FA_TOKEN));
     }
 
-    if (!user.enabled2fa) {
-      user.enabled2fa = true;
+    if (enable) {
+      if (user.enabled2fa) {
+        throw new CustomError(getErrorByKey(ERROR_2FA_ALREADY_VERIFIED));
+      }
 
-      await user.save().catch((_: Error) => {
-        throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
-      });
+      user.enabled2fa = true;
+    } else {
+      if (!user.enabled2fa) {
+        throw new CustomError(getErrorByKey(ERROR_2FA_NOT_ACTIVE));
+      }
+
+      user.enabled2fa = false;
+      user.secret2fa = null;
     }
+
+    await user.save().catch((_: Error) => {
+      throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
+    });
 
     return true;
   }

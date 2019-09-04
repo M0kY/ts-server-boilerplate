@@ -10,6 +10,10 @@ export const ERROR_USER_NOT_LOGGED_IN: string = 'ERROR_USER_NOT_LOGGED_IN';
 export const ERROR_WHILE_UPDATING_USER: string = 'ERROR_WHILE_UPDATING_USER';
 export const ERROR_INVALID_PASSWORD_INPUT: string = 'ERROR_INVALID_PASSWORD_INPUT';
 export const ERROR_INVALID_2FA_TOKEN: string = 'ERROR_INVALID_2FA_TOKEN';
+export const ERROR_NO_2FA_SECRET: string = 'ERROR_NO_2FA_SECRET';
+export const ERROR_2FA_ALREADY_VERIFIED: string = 'ERROR_2FA_ALREADY_VERIFIED';
+export const ERROR_2FA_NOT_ACTIVE: string = 'ERROR_2FA_NOT_ACTIVE';
+export const ERROR_2FA_TOKEN_REQUIRED: string = 'ERROR_2FA_TOKEN_REQUIRED';
 export const ERROR_UNKNOWN: string = 'ERROR_UNKNOWN';
 
 export const ERRORS: ErrorsObject = {
@@ -52,6 +56,22 @@ export const ERRORS: ErrorsObject = {
   ERROR_INVALID_2FA_TOKEN: {
     code: ErrorCode.AUTHENTICATION_ERROR,
     message: 'Invalid 2FA token.',
+  },
+  ERROR_NO_2FA_SECRET: {
+    code: ErrorCode.FORBIDDEN_ERROR,
+    message: 'The secret for 2FA is not set.',
+  },
+  ERROR_2FA_ALREADY_VERIFIED: {
+    code: ErrorCode.FORBIDDEN_ERROR,
+    message: 'Already verified 2FA.',
+  },
+  ERROR_2FA_NOT_ACTIVE: {
+    code: ErrorCode.FORBIDDEN_ERROR,
+    message: "Can't disable 2FA while it's not active.",
+  },
+  ERROR_2FA_TOKEN_REQUIRED: {
+    code: ErrorCode.USER_INPUT_ERROR,
+    message: 'Token for 2FA is required.',
   },
 };
 

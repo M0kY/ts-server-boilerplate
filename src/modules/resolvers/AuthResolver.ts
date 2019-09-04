@@ -1,5 +1,6 @@
 import { Resolver, Arg, Mutation, Args, ArgsType, Field, Ctx, ObjectType, ID } from 'type-graphql';
 import { Length } from 'class-validator';
+import { authenticator } from 'otplib';
 import { User } from '../entity/User';
 import { ResolverContext } from '../../types/ResolverContext';
 import { comparePasswords, hashPassword } from '../../utils/crypto';
@@ -16,6 +17,7 @@ import {
   ERROR_INVALID_TOKEN,
   ERROR_USER_NOT_FOUND,
   ERROR_USER_ALREADY_ACTIVE,
+  ERROR_2FA_TOKEN_REQUIRED,
 } from '../../constants/errorCodes';
 
 @ObjectType()
@@ -84,7 +86,8 @@ export class AuthResolver {
   async login(
     @Arg('username') username: string,
     @Arg('password') password: string,
-    @Ctx() ctx: ResolverContext
+    @Ctx() ctx: ResolverContext,
+    @Arg('token', { nullable: true }) token?: string
   ): Promise<User | null> {
     const user = await User.findOne({
       where: [{ username: username.toLowerCase() }, { email: username.toLowerCase() }],
@@ -98,6 +101,18 @@ export class AuthResolver {
 
     if (!valid) {
       throw new CustomError(getErrorByKey(ERROR_INVALID_LOGIN));
+    }
+
+    if (user.enabled2fa) {
+      if (!token) {
+        throw new CustomError(getErrorByKey(ERROR_2FA_TOKEN_REQUIRED));
+      }
+
+      const isTokenValid = authenticator.verify({ token, secret: user.secret2fa! });
+
+      if (!isTokenValid) {
+        throw new CustomError(getErrorByKey(ERROR_INVALID_LOGIN));
+      }
     }
 
     ctx.req.session!.userId = user.id;

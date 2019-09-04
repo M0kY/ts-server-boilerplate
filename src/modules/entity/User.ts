@@ -53,8 +53,8 @@ export class User extends BaseEntity {
   @Column({ default: false })
   enabled2fa: boolean;
 
-  @Column({ nullable: true })
-  secret2fa: string;
+  @Column({ type: String, nullable: true })
+  secret2fa?: string | null;
 
   @Field()
   @Column({ default: false })
