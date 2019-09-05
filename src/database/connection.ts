@@ -1,13 +1,13 @@
-import { createConnection } from 'typeorm';
+import { createConnection, Connection } from 'typeorm';
 
-const databaseConnection = async () => {
+const databaseConnection = async (): Promise<Connection | undefined> => {
   let retries = 10;
   while (retries) {
     try {
       console.log('Connecting to DB...');
-      await createConnection();
+      const connection = await createConnection();
       console.log('Successfully connected to DB');
-      break;
+      return connection;
     } catch (error) {
       console.log(error);
       retries -= 1;
@@ -17,6 +17,7 @@ const databaseConnection = async () => {
       });
     }
   }
+  return undefined;
 };
 
 export { databaseConnection };
