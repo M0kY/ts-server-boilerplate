@@ -76,7 +76,8 @@ export class UserResolver {
   async changePassword(
     @Arg('currentPassword') currentPassword: string,
     @Arg('newPassword') newPassword: string,
-    @Ctx() ctx: ResolverContext
+    @Ctx() ctx: ResolverContext,
+    @Arg('token', { nullable: true }) token?: string
   ): Promise<ChangePasswordData> {
     const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
 
@@ -89,6 +90,18 @@ export class UserResolver {
         ...getErrorByKey(ERROR_INVALID_PASSWORD_INPUT),
         properties: { invalidArgument: 'currentPassword' },
       });
+    }
+
+    if (user.enabled2fa) {
+      if (!token) {
+        throw new CustomError(getErrorByKey(ERROR_INVALID_2FA_TOKEN));
+      }
+
+      const isTokenValid = authenticator.verify({ token, secret: user.secret2fa! });
+
+      if (!isTokenValid) {
+        throw new CustomError(getErrorByKey(ERROR_INVALID_2FA_TOKEN));
+      }
     }
 
     user.password = hashPassword(newPassword);
