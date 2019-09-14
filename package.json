@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "typescript graphql-yoga typeorm typegraphql server",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/M0kY/ts-server-boilerplate.git"
+  },
   "scripts": {
     "start": "node ./dist/index.js",
     "build": "tsc -b",
