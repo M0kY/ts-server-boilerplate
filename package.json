@@ -31,6 +31,7 @@
     "pg": "^7.12.1",
     "reflect-metadata": "^0.1.13",
     "type-graphql": "^0.17.5",
+    "typedi": "^0.8.0",
     "typeorm": "^0.2.18",
     "uuid": "^3.3.3"
   },

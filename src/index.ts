@@ -8,6 +8,7 @@ import connectRedis from 'connect-redis';
 import express, { Request, Response, NextFunction } from 'express';
 import { ApolloServer } from 'apollo-server-express';
 import { buildSchema, ArgumentValidationError } from 'type-graphql';
+import { Container } from 'typedi';
 
 import { databaseConnection } from './database/connection';
 import { SERVER_PORT, GRAPHQL_ENDPOINT, SESSION_SECRET, NODE_ENV, SESSION_COOKIE_NAME } from './config/envConfig';
@@ -27,6 +28,7 @@ const app = express();
     resolvers: [__dirname + '/modules/resolvers/!(*.test).?(ts|js)'],
     validate: { validationError: { target: false, value: false } },
     authChecker,
+    container: Container,
   });
 
   const server = new ApolloServer({

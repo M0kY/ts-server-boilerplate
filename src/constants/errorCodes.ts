@@ -7,6 +7,7 @@ export const ERROR_INVALID_TOKEN: string = 'ERROR_INVALID_TOKEN';
 export const ERROR_USER_NOT_FOUND: string = 'ERROR_USER_NOT_FOUND';
 export const ERROR_USER_ALREADY_ACTIVE: string = 'ERROR_USER_ALREADY_ACTIVE';
 export const ERROR_USER_NOT_LOGGED_IN: string = 'ERROR_USER_NOT_LOGGED_IN';
+export const ERROR_WHILE_CREATING_USER: string = 'ERROR_WHILE_CREATING_USER';
 export const ERROR_WHILE_UPDATING_USER: string = 'ERROR_WHILE_UPDATING_USER';
 export const ERROR_INVALID_PASSWORD_INPUT: string = 'ERROR_INVALID_PASSWORD_INPUT';
 export const ERROR_INVALID_2FA_TOKEN: string = 'ERROR_INVALID_2FA_TOKEN';
@@ -44,6 +45,10 @@ export const ERRORS: ErrorsObject = {
   ERROR_WHILE_UPDATING_USER: {
     code: ErrorCode.DATABASE_ERROR,
     message: 'An error occured while updating user.',
+  },
+  ERROR_WHILE_CREATING_USER: {
+    code: ErrorCode.DATABASE_ERROR,
+    message: 'An error occured while creating user.',
   },
   ERROR_UNKNOWN: {
     code: ErrorCode.INTERNAL_SERVER_ERROR,

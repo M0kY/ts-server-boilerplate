@@ -1,19 +1,11 @@
 import { ObjectType, Field, ID } from 'type-graphql';
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  BaseEntity,
-  Unique,
-  UpdateDateColumn,
-  CreateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Unique, UpdateDateColumn, CreateDateColumn } from 'typeorm';
 import { Role } from '../../types/Roles';
 
 @ObjectType()
 @Entity()
 @Unique(['username', 'email'])
-export class User extends BaseEntity {
+export class User {
   @Field(() => ID)
   @PrimaryGeneratedColumn({ type: 'integer' })
   id: number;

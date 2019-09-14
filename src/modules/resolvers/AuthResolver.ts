@@ -19,6 +19,9 @@ import {
   ERROR_USER_ALREADY_ACTIVE,
   ERROR_2FA_TOKEN_REQUIRED,
 } from '../../constants/errorCodes';
+import { UserService } from '../services/UserService';
+import { Inject } from 'typedi';
+import { RegisterInput } from '../../types/ResolverTypes';
 
 @ObjectType()
 class ActivationData {
@@ -26,22 +29,6 @@ class ActivationData {
   id: string;
   @Field(() => Boolean)
   activated: boolean;
-}
-
-@ArgsType()
-class LoginInput {
-  @Field()
-  username: string;
-
-  @Field()
-  @Length(8, 72)
-  password: string;
-}
-
-@ArgsType()
-class RegisterInput extends LoginInput {
-  @Field()
-  email: string;
 }
 
 @ArgsType()
@@ -67,15 +54,11 @@ class ResetPasswordData {
 
 @Resolver(User)
 export class AuthResolver {
+  constructor(@Inject(() => UserService) private readonly userService: UserService) {}
+
   @Mutation(() => User, { nullable: true })
   async register(@Args() { username, email, password }: RegisterInput): Promise<User> {
-    const hashedPassword = hashPassword(password);
-    const user = await User.create({
-      username: username.toLowerCase(),
-      displayName: username,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-    }).save();
+    const user = await this.userService.createUser({ username, email, password });
 
     await sendMail(user.email, MailTemplateType.ACCOUNT_ACTIVATION, user);
 
@@ -89,9 +72,7 @@ export class AuthResolver {
     @Ctx() ctx: ResolverContext,
     @Arg('token', { nullable: true }) token?: string
   ): Promise<User | null> {
-    const user = await User.findOne({
-      where: [{ username: username.toLowerCase() }, { email: username.toLowerCase() }],
-    });
+    const user = await this.userService.findByUsernameOrEmail(username);
 
     if (!user) {
       throw new CustomError(getErrorByKey(ERROR_INVALID_LOGIN));
@@ -141,11 +122,12 @@ export class AuthResolver {
   @Mutation(() => ActivationData)
   async activate(@Arg('userId', () => ID) userId: string, @Arg('token') token: string): Promise<ActivationData> {
     const id = await redis.get(USER_ACTIVATION_PREFIX + token);
-    const user = await User.findOne({ id: parseInt(userId, 10) });
 
     if (!id || id !== userId) {
       throw new CustomError(getErrorByKey(ERROR_INVALID_TOKEN));
     }
+
+    const user = await this.userService.findById(userId);
 
     if (!user) {
       throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
@@ -155,8 +137,7 @@ export class AuthResolver {
       throw new CustomError(getErrorByKey(ERROR_USER_ALREADY_ACTIVE));
     }
 
-    user.activated = true;
-    await user.save();
+    await this.userService.updateUser(userId, { activated: true });
     await redis.del(USER_ACTIVATION_PREFIX + token);
 
     return { id: userId, activated: user.activated };
@@ -164,7 +145,7 @@ export class AuthResolver {
 
   @Mutation(() => Boolean)
   async resendActivationLink(@Arg('email') email: string): Promise<Boolean> {
-    const user = await User.findOne({ email });
+    const user = await this.userService.findByEmail(email);
     if (user) {
       await sendMail(user.email, MailTemplateType.ACCOUNT_ACTIVATION, user);
     }
@@ -174,7 +155,7 @@ export class AuthResolver {
 
   @Mutation(() => Boolean)
   async resetPasswordRequest(@Arg('email') email: string): Promise<Boolean> {
-    const user = await User.findOne({ email });
+    const user = await this.userService.findByEmail(email);
     if (user) {
       await sendMail(user.email, MailTemplateType.PASSWORD_RESET, user);
     }
@@ -185,18 +166,18 @@ export class AuthResolver {
   @Mutation(() => ResetPasswordData)
   async resetPassword(@Args() { userId, resetToken, newPassword }: ResetPasswordInput): Promise<ResetPasswordData> {
     const id = await redis.get(USER_RESET_PASSWORD_PREFIX + resetToken);
-    const user = await User.findOne({ id: parseInt(userId, 10) });
 
     if (!id || id !== userId) {
       throw new CustomError(getErrorByKey(ERROR_INVALID_TOKEN));
     }
 
+    const user = await this.userService.findById(userId);
+
     if (!user) {
       throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
     }
 
-    user.password = hashPassword(newPassword);
-    await user.save();
+    await this.userService.updateUser(userId, { password: hashPassword(newPassword) });
     await redis.del(USER_RESET_PASSWORD_PREFIX + resetToken);
 
     return { id: userId, passwordUpdated: true };

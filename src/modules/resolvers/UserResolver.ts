@@ -1,15 +1,13 @@
-import { Resolver, Query, Mutation, Field, Ctx, Authorized, InputType, Arg, ID, ObjectType } from 'type-graphql';
+import { Resolver, Query, Mutation, Field, Ctx, Authorized, Arg, ID, ObjectType } from 'type-graphql';
 import { authenticator } from 'otplib';
 
 import { User } from '../entity/User';
 import { ResolverContext } from '../../types/ResolverContext';
-import { hashPassword, comparePasswords } from '../../utils/crypto';
+import { comparePasswords } from '../../utils/crypto';
 import { Role } from '../../types/Roles';
 import {
   CustomError,
   getErrorByKey,
-  ERROR_USER_NOT_FOUND,
-  ERROR_WHILE_UPDATING_USER,
   ERROR_INVALID_PASSWORD_INPUT,
   ERROR_INVALID_2FA_TOKEN,
   ERROR_NO_2FA_SECRET,
@@ -17,20 +15,9 @@ import {
   ERROR_2FA_NOT_ACTIVE,
 } from '../../constants/errorCodes';
 import { SERVICE_NAME } from '../../config/envConfig';
-
-@InputType({ description: 'User profile data which can be updated' })
-class UpdateProfileInput implements Partial<User> {
-  [key: string]: string;
-
-  @Field({ nullable: true })
-  email: string;
-
-  @Field({ nullable: true })
-  firstName: string;
-
-  @Field({ nullable: true })
-  lastName: string;
-}
+import { UserService } from '../services/UserService';
+import { Inject } from 'typedi';
+import { UpdateProfileInput, User2faDTO } from '../../types/ResolverTypes';
 
 @ObjectType()
 class ChangePasswordData {
@@ -52,23 +39,18 @@ class Activate2faData {
 
 @Resolver(User)
 export class UserResolver {
+  constructor(@Inject(() => UserService) private readonly userService: UserService) {}
+
   @Authorized()
   @Query(() => User, { nullable: true })
   async me(@Ctx() ctx: ResolverContext): Promise<User> {
-    const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
-
-    if (!user) {
-      throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
-    }
-
-    return user;
+    return await this.userService.findById(ctx.req.session!.userId);
   }
 
   @Authorized(Role.ADMIN)
   @Query(() => [User])
   async getAllUsers(): Promise<User[]> {
-    const user = await User.find();
-    return user || [];
+    return await this.userService.getAll();
   }
 
   @Authorized()
@@ -79,11 +61,7 @@ export class UserResolver {
     @Ctx() ctx: ResolverContext,
     @Arg('token', { nullable: true }) token?: string
   ): Promise<ChangePasswordData> {
-    const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
-
-    if (!user) {
-      throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
-    }
+    const user = await this.userService.findById(ctx.req.session!.userId);
 
     if (!comparePasswords(currentPassword, user.password)) {
       throw new CustomError({
@@ -104,8 +82,7 @@ export class UserResolver {
       }
     }
 
-    user.password = hashPassword(newPassword);
-    await user.save();
+    await this.userService.updatePassword(user, newPassword);
 
     return { id: user.id.toString(), passwordChanged: true };
   }
@@ -113,30 +90,14 @@ export class UserResolver {
   @Authorized()
   @Mutation(() => User, { nullable: true })
   async updateProfile(@Arg('data') updateProfileData: UpdateProfileInput, @Ctx() ctx: ResolverContext): Promise<User> {
-    const user: any = await User.findOne({ where: { id: ctx.req.session!.userId } });
-
-    if (!user) {
-      throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
-    }
-
-    Object.keys(updateProfileData).forEach(key => {
-      user[key] = updateProfileData[key];
-    });
-
-    await user.save().catch((_: Error) => {
-      throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
-    });
+    const user = await this.userService.updateUserProfile(ctx.req.session!.userId, updateProfileData);
     return user;
   }
 
   @Authorized()
   @Mutation(() => Activate2faData)
   async activate2fa(@Ctx() ctx: ResolverContext): Promise<Activate2faData> {
-    const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
-
-    if (!user) {
-      throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
-    }
+    const user = await this.userService.findById(ctx.req.session!.userId);
 
     if (user.enabled2fa) {
       throw new CustomError(getErrorByKey(ERROR_2FA_ALREADY_VERIFIED));
@@ -144,11 +105,7 @@ export class UserResolver {
 
     const secret = authenticator.generateSecret();
 
-    user.secret2fa = secret;
-
-    await user.save().catch((_: Error) => {
-      throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
-    });
+    await this.userService.updateUser(ctx.req.session!.userId, { secret2fa: secret });
 
     const uri = authenticator.keyuri(user.email, SERVICE_NAME, secret);
 
@@ -166,11 +123,7 @@ export class UserResolver {
     @Arg('enable') enable: boolean,
     @Ctx() ctx: ResolverContext
   ): Promise<Boolean> {
-    const user = await User.findOne({ where: { id: ctx.req.session!.userId } });
-
-    if (!user) {
-      throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
-    }
+    const user = await this.userService.findById(ctx.req.session!.userId);
 
     if (!user.secret2fa) {
       throw new CustomError(getErrorByKey(ERROR_NO_2FA_SECRET));
@@ -182,24 +135,22 @@ export class UserResolver {
       throw new CustomError(getErrorByKey(ERROR_INVALID_2FA_TOKEN));
     }
 
+    let update2faDTO: User2faDTO = {};
+
     if (enable) {
       if (user.enabled2fa) {
         throw new CustomError(getErrorByKey(ERROR_2FA_ALREADY_VERIFIED));
       }
 
-      user.enabled2fa = true;
+      update2faDTO = { enabled2fa: true };
     } else {
       if (!user.enabled2fa) {
         throw new CustomError(getErrorByKey(ERROR_2FA_NOT_ACTIVE));
       }
-
-      user.enabled2fa = false;
-      user.secret2fa = null;
+      update2faDTO = { enabled2fa: false, secret2fa: null };
     }
 
-    await user.save().catch((_: Error) => {
-      throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
-    });
+    await this.userService.updateUser(ctx.req.session!.userId, update2faDTO);
 
     return true;
   }
