@@ -1,17 +1,18 @@
 import { createConnection, Connection } from 'typeorm';
+import { logger } from '../utils/logger';
 
 const databaseConnection = async (): Promise<Connection | undefined> => {
   let retries = 10;
   while (retries) {
     try {
-      console.log('Connecting to DB...');
+      logger.info('Connecting to DB...');
       const connection = await createConnection();
-      console.log('Successfully connected to DB');
+      logger.info('Successfully connected to DB');
       return connection;
     } catch (error) {
-      console.log(error);
+      logger.error(error);
       retries -= 1;
-      console.log(`Connection to DB failed: ${retries} retries remaining...`);
+      logger.error(`Connection to DB failed: ${retries} retries remaining...`);
       await new Promise(res => {
         setTimeout(res, 5000);
       });

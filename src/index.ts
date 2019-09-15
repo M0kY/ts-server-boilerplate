@@ -18,6 +18,7 @@ import { USER_SESSION_PREFIX } from './constants/redisPrefixes';
 import { authChecker } from './middleware/authChecker';
 import { ERROR_CORS_REQUEST_BLOCKED, ERRORS } from './constants/errorCodes';
 import { ErrorCode } from './types/Error';
+import { logger } from './utils/logger';
 
 const app = express();
 
@@ -93,6 +94,6 @@ const app = express();
   server.applyMiddleware({ app, path: GRAPHQL_ENDPOINT });
 
   app.listen({ port: SERVER_PORT }, () =>
-    console.log(`Server is running on http://localhost:4000${server.graphqlPath}.`)
+    logger.info(`Server is running on http://localhost:4000${server.graphqlPath}`)
   );
 })();
