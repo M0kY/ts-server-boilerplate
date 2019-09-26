@@ -3,6 +3,7 @@ import { redis } from '../../config/redis';
 import { USER_ACTIVATION_PREFIX } from '../../constants/redisPrefixes';
 import { logger } from '../../utils/logger';
 import { CustomError, getErrorByKey, ERROR_WHILE_REDIS_SET } from '../../constants/errorCodes';
+import { CLIENT_URL } from '../../config/envConfig';
 
 const mailContent = async (userId: number) => {
   const activationToken = v4();
@@ -13,7 +14,7 @@ const mailContent = async (userId: number) => {
   });
 
   // TODO change hardcoded url
-  return `<p>Activation code: http://localhost:3000/activate/${userId}/${activationToken}</p>`;
+  return `<p>Activation code: ${CLIENT_URL}/activate/${userId}/${activationToken}</p>`;
 };
 
 module.exports = {

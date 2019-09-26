@@ -9,6 +9,7 @@ export const REDIS_PASSWORD = process.env.REDIS_PASSWORD || '2JJXKkPAP37bxsCje6X
 export const BCRYPT_SALT_ROUNDS =
   (process.env.BCRYPT_SALT_ROUNDS && parseInt(process.env.BCRYPT_SALT_ROUNDS, 10)) || 12;
 export const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'sid';
+export const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 export const MAILER_NAME = process.env.MAILER_NAME || '';
 export const MAILER_SMTP_HOST = process.env.MAILER_SMTP_HOST || 'smtp.ethereal.email';
 export const MAILER_PORT = (process.env.MAILER_PORT && parseInt(process.env.MAILER_PORT, 10)) || 587;

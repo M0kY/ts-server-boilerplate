@@ -3,6 +3,7 @@ import { redis } from '../../config/redis';
 import { USER_RESET_PASSWORD_PREFIX } from '../../constants/redisPrefixes';
 import { logger } from '../../utils/logger';
 import { CustomError, getErrorByKey, ERROR_WHILE_REDIS_SET } from '../../constants/errorCodes';
+import { CLIENT_URL } from '../../config/envConfig';
 
 const mailContent = async (userId: number) => {
   const resetPasswordToken = v4();
@@ -13,7 +14,7 @@ const mailContent = async (userId: number) => {
   });
 
   // TODO change hardcoded url
-  return `<p>Activation code: http://localhost:3000/reset-password/${userId}/${resetPasswordToken}</p>`;
+  return `<p>Activation code: ${CLIENT_URL}/reset-password/${userId}/${resetPasswordToken}</p>`;
 };
 
 module.exports = {
