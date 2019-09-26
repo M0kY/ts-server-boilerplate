@@ -9,14 +9,20 @@ import {
   ERROR_WHILE_UPDATING_USER,
   ERROR_USER_NOT_FOUND,
   ERROR_WHILE_CREATING_USER,
+  ERROR_WHILE_LOOKING_FOR_USER,
 } from '../../constants/errorCodes';
+import { logger } from '../../utils/logger';
 
 @Service()
 export class UserService {
   private readonly userRepository: Repository<User> = getRepository(User);
 
   async findById(id: string) {
-    const user = await this.userRepository.findOne({ id: parseInt(id, 10) });
+    const user = await this.userRepository.findOne({ id: parseInt(id, 10) }).catch((error: Error) => {
+      logger.error(error);
+      throw new CustomError(getErrorByKey(ERROR_WHILE_LOOKING_FOR_USER));
+    });
+
     if (!user) {
       throw new CustomError(getErrorByKey(ERROR_USER_NOT_FOUND));
     }
@@ -24,17 +30,28 @@ export class UserService {
   }
 
   async findByUsernameOrEmail(username: string) {
-    return await this.userRepository.findOne({
-      where: [{ username: username.toLowerCase() }, { email: username.toLowerCase() }],
-    });
+    return await this.userRepository
+      .findOne({
+        where: [{ username: username.toLowerCase() }, { email: username.toLowerCase() }],
+      })
+      .catch((error: Error) => {
+        logger.error(error);
+        throw new CustomError(getErrorByKey(ERROR_WHILE_LOOKING_FOR_USER));
+      });
   }
 
   async findByEmail(email: string) {
-    return await this.userRepository.findOne({ email });
+    return await this.userRepository.findOne({ email }).catch((error: Error) => {
+      logger.error(error);
+      throw new CustomError(getErrorByKey(ERROR_WHILE_LOOKING_FOR_USER));
+    });
   }
 
   async getAll() {
-    return await this.userRepository.find();
+    return await this.userRepository.find().catch((error: Error) => {
+      logger.error(error);
+      throw new CustomError(getErrorByKey(ERROR_WHILE_LOOKING_FOR_USER));
+    });
   }
 
   async createUser(data: RegisterInput) {
@@ -45,34 +62,41 @@ export class UserService {
     user.email = data.email.toLowerCase();
     user.password = hashPassword(data.password);
 
-    return this.userRepository.save(user).catch((_: Error) => {
+    return this.userRepository.save(user).catch((error: Error) => {
+      logger.error(error);
       throw new CustomError(getErrorByKey(ERROR_WHILE_CREATING_USER));
     });
   }
 
   async updatePassword(user: User, newPassword: string) {
     user.password = hashPassword(newPassword);
-    await this.userRepository.save(user).catch((_: Error) => {
+    await this.userRepository.save(user).catch((error: Error) => {
+      logger.error(error);
       throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
     });
   }
 
   async updateUserProfile(id: string, updateProfileData: UpdateProfileInput) {
-    const user: any = await this.findById(id);
+    const user: any = await this.findById(id).catch((error: Error) => {
+      logger.error(error);
+      throw new CustomError(getErrorByKey(ERROR_WHILE_LOOKING_FOR_USER));
+    });
 
     Object.keys(updateProfileData).forEach(key => {
-      if (updateProfileData[key]) {
+      if (updateProfileData[key] !== undefined) {
         user[key] = updateProfileData[key];
       }
     });
 
-    return this.userRepository.save(user).catch((_: Error) => {
+    return this.userRepository.save(user).catch((error: Error) => {
+      logger.error(error);
       throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
     });
   }
 
   async updateUser(id: string, data: Partial<User>) {
-    return this.userRepository.update(id, data).catch((_: Error) => {
+    return this.userRepository.update(id, data).catch((error: Error) => {
+      logger.error(error);
       throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
     });
   }

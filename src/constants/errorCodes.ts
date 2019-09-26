@@ -7,8 +7,13 @@ export const ERROR_INVALID_TOKEN: string = 'ERROR_INVALID_TOKEN';
 export const ERROR_USER_NOT_FOUND: string = 'ERROR_USER_NOT_FOUND';
 export const ERROR_USER_ALREADY_ACTIVE: string = 'ERROR_USER_ALREADY_ACTIVE';
 export const ERROR_USER_NOT_LOGGED_IN: string = 'ERROR_USER_NOT_LOGGED_IN';
+export const ERROR_WHILE_LOOKING_FOR_USER: string = 'ERROR_WHILE_LOOKING_FOR_USER';
 export const ERROR_WHILE_CREATING_USER: string = 'ERROR_WHILE_CREATING_USER';
 export const ERROR_WHILE_UPDATING_USER: string = 'ERROR_WHILE_UPDATING_USER';
+export const ERROR_WHILE_REDIS_SET: string = 'ERROR_WHILE_REDIS_SET';
+export const ERROR_WHILE_REDIS_LOOKUP: string = 'ERROR_WHILE_REDIS_LOOKUP';
+export const ERROR_WHILE_REDIS_DELETE: string = 'ERROR_WHILE_REDIS_DELETE';
+export const ERROR_WHILE_SENDING_EMAIL: string = 'ERROR_WHILE_SENDING_EMAIL';
 export const ERROR_INVALID_PASSWORD_INPUT: string = 'ERROR_INVALID_PASSWORD_INPUT';
 export const ERROR_INVALID_2FA_TOKEN: string = 'ERROR_INVALID_2FA_TOKEN';
 export const ERROR_NO_2FA_SECRET: string = 'ERROR_NO_2FA_SECRET';
@@ -42,6 +47,10 @@ export const ERRORS: ErrorsObject = {
     code: ErrorCode.AUTHENTICATION_ERROR,
     message: 'Not logged in.',
   },
+  ERROR_WHILE_LOOKING_FOR_USER: {
+    code: ErrorCode.DATABASE_ERROR,
+    message: 'An error occured while looking for user.',
+  },
   ERROR_WHILE_UPDATING_USER: {
     code: ErrorCode.DATABASE_ERROR,
     message: 'An error occured while updating user.',
@@ -49,6 +58,22 @@ export const ERRORS: ErrorsObject = {
   ERROR_WHILE_CREATING_USER: {
     code: ErrorCode.DATABASE_ERROR,
     message: 'An error occured while creating user.',
+  },
+  ERROR_WHILE_REDIS_SET: {
+    code: ErrorCode.DATABASE_ERROR,
+    message: 'An error occured while setting redis record.',
+  },
+  ERROR_WHILE_REDIS_LOOKUP: {
+    code: ErrorCode.DATABASE_ERROR,
+    message: 'An error occured while looking for redis record.',
+  },
+  ERROR_WHILE_REDIS_DELETE: {
+    code: ErrorCode.DATABASE_ERROR,
+    message: 'An error occured while deleting redis record.',
+  },
+  ERROR_WHILE_SENDING_EMAIL: {
+    code: ErrorCode.INTERNAL_SERVER_ERROR,
+    message: 'An error occured while sending email.',
   },
   ERROR_UNKNOWN: {
     code: ErrorCode.INTERNAL_SERVER_ERROR,

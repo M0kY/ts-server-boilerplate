@@ -18,10 +18,14 @@ import {
   ERROR_USER_NOT_FOUND,
   ERROR_USER_ALREADY_ACTIVE,
   ERROR_2FA_TOKEN_REQUIRED,
+  ERROR_WHILE_REDIS_DELETE,
+  ERROR_WHILE_REDIS_LOOKUP,
+  ERROR_NO_2FA_SECRET,
 } from '../../constants/errorCodes';
 import { UserService } from '../services/UserService';
 import { Inject } from 'typedi';
 import { RegisterInput } from '../../types/ResolverTypes';
+import { logger } from '../../utils/logger';
 
 @ObjectType()
 class ActivationData {
@@ -89,7 +93,12 @@ export class AuthResolver {
         throw new CustomError(getErrorByKey(ERROR_2FA_TOKEN_REQUIRED));
       }
 
-      const isTokenValid = authenticator.verify({ token, secret: user.secret2fa! });
+      if (!user.secret2fa) {
+        logger.error(getErrorByKey(ERROR_NO_2FA_SECRET).message, 'LOGIN');
+        throw new CustomError(getErrorByKey(ERROR_NO_2FA_SECRET));
+      }
+
+      const isTokenValid = authenticator.verify({ token, secret: user.secret2fa });
 
       if (!isTokenValid) {
         throw new CustomError(getErrorByKey(ERROR_INVALID_LOGIN));
@@ -121,7 +130,10 @@ export class AuthResolver {
 
   @Mutation(() => ActivationData)
   async activate(@Arg('userId', () => ID) userId: string, @Arg('token') token: string): Promise<ActivationData> {
-    const id = await redis.get(USER_ACTIVATION_PREFIX + token);
+    const id = await redis.get(USER_ACTIVATION_PREFIX + token).catch((error: Error) => {
+      logger.error(error);
+      throw new CustomError(getErrorByKey(ERROR_WHILE_REDIS_LOOKUP));
+    });
 
     if (!id || id !== userId) {
       throw new CustomError(getErrorByKey(ERROR_INVALID_TOKEN));
@@ -138,7 +150,10 @@ export class AuthResolver {
     }
 
     await this.userService.updateUser(userId, { activated: true });
-    await redis.del(USER_ACTIVATION_PREFIX + token);
+    await redis.del(USER_ACTIVATION_PREFIX + token).catch((error: Error) => {
+      logger.error(error);
+      throw new CustomError(getErrorByKey(ERROR_WHILE_REDIS_DELETE));
+    });
 
     return { id: userId, activated: user.activated };
   }
@@ -165,7 +180,10 @@ export class AuthResolver {
 
   @Mutation(() => ResetPasswordData)
   async resetPassword(@Args() { userId, resetToken, newPassword }: ResetPasswordInput): Promise<ResetPasswordData> {
-    const id = await redis.get(USER_RESET_PASSWORD_PREFIX + resetToken);
+    const id = await redis.get(USER_RESET_PASSWORD_PREFIX + resetToken).catch((error: Error) => {
+      logger.error(error);
+      throw new CustomError(getErrorByKey(ERROR_WHILE_REDIS_DELETE));
+    });
 
     if (!id || id !== userId) {
       throw new CustomError(getErrorByKey(ERROR_INVALID_TOKEN));
@@ -178,7 +196,10 @@ export class AuthResolver {
     }
 
     await this.userService.updateUser(userId, { password: hashPassword(newPassword) });
-    await redis.del(USER_RESET_PASSWORD_PREFIX + resetToken);
+    await redis.del(USER_RESET_PASSWORD_PREFIX + resetToken).catch((error: Error) => {
+      logger.error(error);
+      throw new CustomError(getErrorByKey(ERROR_WHILE_REDIS_DELETE));
+    });
 
     return { id: userId, passwordUpdated: true };
   }

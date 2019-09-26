@@ -18,6 +18,7 @@ import { SERVICE_NAME } from '../../config/envConfig';
 import { UserService } from '../services/UserService';
 import { Inject } from 'typedi';
 import { UpdateProfileInput, User2faDTO } from '../../types/ResolverTypes';
+import { logger } from '../../utils/logger';
 
 @ObjectType()
 class ChangePasswordData {
@@ -73,6 +74,11 @@ export class UserResolver {
     if (user.enabled2fa) {
       if (!token) {
         throw new CustomError(getErrorByKey(ERROR_INVALID_2FA_TOKEN));
+      }
+
+      if (!user.secret2fa) {
+        logger.error(getErrorByKey(ERROR_NO_2FA_SECRET).message, 'CHANGE PASSWORD');
+        throw new CustomError(getErrorByKey(ERROR_NO_2FA_SECRET));
       }
 
       const isTokenValid = authenticator.verify({ token, secret: user.secret2fa! });
