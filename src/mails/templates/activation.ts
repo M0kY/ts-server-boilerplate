@@ -13,7 +13,6 @@ const mailContent = async (userId: number) => {
     throw new CustomError(getErrorByKey(ERROR_WHILE_REDIS_SET));
   });
 
-  // TODO change hardcoded url
   return `<p>Activation code: ${CLIENT_URL}/activate/${userId}/${activationToken}</p>`;
 };
 
