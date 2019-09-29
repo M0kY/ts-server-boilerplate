@@ -64,7 +64,7 @@ export class AuthResolver {
   async register(@Args() { username, email, password }: RegisterInput): Promise<User> {
     const user = await this.userService.createUser({ username, email, password });
 
-    await sendMail(user.email, MailTemplateType.ACCOUNT_ACTIVATION, user);
+    await sendMail(user, MailTemplateType.ACCOUNT_ACTIVATION);
 
     return user;
   }
@@ -162,7 +162,7 @@ export class AuthResolver {
   async resendActivationLink(@Arg('email') email: string): Promise<Boolean> {
     const user = await this.userService.findByEmail(email);
     if (user) {
-      await sendMail(user.email, MailTemplateType.ACCOUNT_ACTIVATION, user);
+      await sendMail(user, MailTemplateType.ACCOUNT_ACTIVATION);
     }
 
     return true;
@@ -172,7 +172,7 @@ export class AuthResolver {
   async resetPasswordRequest(@Arg('email') email: string): Promise<Boolean> {
     const user = await this.userService.findByEmail(email);
     if (user) {
-      await sendMail(user.email, MailTemplateType.PASSWORD_RESET, user);
+      await sendMail(user, MailTemplateType.PASSWORD_RESET);
     }
 
     return true;
