@@ -85,11 +85,13 @@ export class AuthResolver {
     const valid = comparePasswords(password, user.password);
 
     if (!valid) {
+      await this.userService.failedLoginAttempt(user);
       throw new CustomError(getErrorByKey(ERROR_INVALID_LOGIN));
     }
 
     if (user.enabled2fa) {
       if (!token) {
+        await this.userService.failedLoginAttempt(user);
         throw new CustomError(getErrorByKey(ERROR_2FA_TOKEN_REQUIRED));
       }
 
@@ -101,10 +103,12 @@ export class AuthResolver {
       const isTokenValid = authenticator.verify({ token, secret: user.secret2fa });
 
       if (!isTokenValid) {
+        await this.userService.failedLoginAttempt(user);
         throw new CustomError(getErrorByKey(ERROR_INVALID_LOGIN));
       }
     }
 
+    await this.userService.resetLoginAttempts(user.id);
     ctx.req.session!.userId = user.id;
 
     return user;

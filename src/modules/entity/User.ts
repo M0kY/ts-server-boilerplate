@@ -49,8 +49,16 @@ export class User {
   secret2fa?: string | null;
 
   @Field()
+  @Column({ type: 'integer', default: 0 })
+  loginAttempts: number;
+
+  @Field()
   @Column({ default: false })
   locked: boolean;
+
+  @Field()
+  @Column({ default: false })
+  disabled: boolean;
 
   @Field(() => Date)
   @CreateDateColumn()

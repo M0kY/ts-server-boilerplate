@@ -100,4 +100,23 @@ export class UserService {
       throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
     });
   }
+
+  async failedLoginAttempt(user: User) {
+    user.loginAttempts++;
+    if (user.loginAttempts >= 10) {
+      user.locked = true;
+    }
+
+    await this.userRepository.save(user).catch((error: Error) => {
+      logger.error(error);
+      throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
+    });
+  }
+
+  async resetLoginAttempts(id: number) {
+    return this.userRepository.update(id, { loginAttempts: 0 }).catch((error: Error) => {
+      logger.error(error);
+      throw new CustomError(getErrorByKey(ERROR_WHILE_UPDATING_USER));
+    });
+  }
 }
