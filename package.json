@@ -50,7 +50,7 @@
     "@types/node": "^12.12.8",
     "@types/nodemailer": "6.2.2",
     "@types/uuid": "3.4.6",
-    "ts-node": "8.5.2",
+    "ts-node": "8.5.4",
     "ts-node-dev": "1.0.0-pre.44",
     "typescript": "3.7.2"
   }
