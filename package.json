@@ -30,7 +30,7 @@
     "otplib": "^11.0.1",
     "pg": "^7.12.1",
     "reflect-metadata": "^0.1.13",
-    "type-graphql": "^0.17.5",
+    "type-graphql": "^0.17.6",
     "typedi": "^0.8.0",
     "typeorm": "^0.2.20",
     "uuid": "^3.3.3",
