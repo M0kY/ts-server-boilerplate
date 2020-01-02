@@ -21,6 +21,7 @@ import {
   ERROR_WHILE_REDIS_DELETE,
   ERROR_WHILE_REDIS_LOOKUP,
   ERROR_NO_2FA_SECRET,
+  ERROR_INVALID_2FA_TOKEN,
 } from '../../constants/errorCodes';
 import { UserService } from '../services/UserService';
 import { Inject } from 'typedi';
@@ -74,7 +75,7 @@ export class AuthResolver {
     @Arg('username') username: string,
     @Arg('password') password: string,
     @Ctx() ctx: ResolverContext,
-    @Arg('token', { nullable: true }) token?: string
+    @Arg('token', { nullable: true }) token?: string,
   ): Promise<User | null> {
     const user = await this.userService.findByUsernameOrEmail(username);
 
@@ -104,7 +105,7 @@ export class AuthResolver {
 
       if (!isTokenValid) {
         await this.userService.failedLoginAttempt(user);
-        throw new CustomError(getErrorByKey(ERROR_INVALID_LOGIN));
+        throw new CustomError(getErrorByKey(ERROR_INVALID_2FA_TOKEN));
       }
     }
 
