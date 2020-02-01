@@ -65,7 +65,7 @@ export class AuthResolver {
   async register(@Args() { username, email, password }: RegisterInput): Promise<User> {
     const user = await this.userService.createUser({ username, email, password });
 
-    await sendMail(user, MailTemplateType.ACCOUNT_ACTIVATION);
+    sendMail(user, MailTemplateType.ACCOUNT_ACTIVATION);
 
     return user;
   }
@@ -155,19 +155,20 @@ export class AuthResolver {
     }
 
     await this.userService.updateUser(userId, { activated: true });
+    const updatedUser = await this.userService.findById(userId);
     await redis.del(USER_ACTIVATION_PREFIX + token).catch((error: Error) => {
       logger.error(error);
       throw new CustomError(getErrorByKey(ERROR_WHILE_REDIS_DELETE));
     });
 
-    return { id: userId, activated: user.activated };
+    return { id: userId, activated: updatedUser.activated };
   }
 
   @Mutation(() => Boolean)
   async resendActivationLink(@Arg('email') email: string): Promise<Boolean> {
     const user = await this.userService.findByEmail(email);
-    if (user) {
-      await sendMail(user, MailTemplateType.ACCOUNT_ACTIVATION);
+    if (user && !user.activated) {
+      sendMail(user, MailTemplateType.ACCOUNT_ACTIVATION);
     }
 
     return true;
@@ -177,7 +178,7 @@ export class AuthResolver {
   async resetPasswordRequest(@Arg('email') email: string): Promise<Boolean> {
     const user = await this.userService.findByEmail(email);
     if (user) {
-      await sendMail(user, MailTemplateType.PASSWORD_RESET);
+      sendMail(user, MailTemplateType.PASSWORD_RESET);
     }
 
     return true;
