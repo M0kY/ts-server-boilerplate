@@ -6,6 +6,7 @@ export const ERROR_INVALID_LOGIN: string = 'ERROR_INVALID_LOGIN';
 export const ERROR_INVALID_TOKEN: string = 'ERROR_INVALID_TOKEN';
 export const ERROR_USER_NOT_FOUND: string = 'ERROR_USER_NOT_FOUND';
 export const ERROR_USER_ALREADY_ACTIVE: string = 'ERROR_USER_ALREADY_ACTIVE';
+export const ERROR_USER_NOT_ACTIVE: string = 'ERROR_USER_NOT_ACTIVE';
 export const ERROR_USER_NOT_LOGGED_IN: string = 'ERROR_USER_NOT_LOGGED_IN';
 export const ERROR_WHILE_LOOKING_FOR_USER: string = 'ERROR_WHILE_LOOKING_FOR_USER';
 export const ERROR_WHILE_CREATING_USER: string = 'ERROR_WHILE_CREATING_USER';
@@ -42,6 +43,10 @@ export const ERRORS: ErrorsObject = {
   ERROR_USER_ALREADY_ACTIVE: {
     code: ErrorCode.FORBIDDEN_ERROR,
     message: 'User already active.',
+  },
+  ERROR_USER_NOT_ACTIVE: {
+    code: ErrorCode.FORBIDDEN_ERROR,
+    message: 'User not active.',
   },
   ERROR_USER_NOT_LOGGED_IN: {
     code: ErrorCode.AUTHENTICATION_ERROR,
