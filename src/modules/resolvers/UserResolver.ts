@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Field, Ctx, Authorized, Arg, ID, ObjectType } from 'type-graphql';
+import { Resolver, Query, Mutation, Field, Ctx, Authorized, Arg, ID, ObjectType, UseMiddleware } from 'type-graphql';
 import { authenticator } from 'otplib';
 
 import { User } from '../entity/User';
@@ -19,6 +19,7 @@ import { UserService } from '../services/UserService';
 import { Inject } from 'typedi';
 import { UpdateProfileInput, User2faDTO } from '../../types/ResolverTypes';
 import { logger } from '../../utils/logger';
+import { PermissionsMiddleware } from '../../middleware/permissionsMIddleware';
 
 @ObjectType()
 class ChangePasswordData {
@@ -43,18 +44,21 @@ export class UserResolver {
   constructor(@Inject(() => UserService) private readonly userService: UserService) {}
 
   @Authorized()
+  @UseMiddleware(PermissionsMiddleware)
   @Query(() => User, { nullable: true })
   async me(@Ctx() ctx: ResolverContext): Promise<User> {
     return await this.userService.findById(ctx.req.session!.userId);
   }
 
   @Authorized(Role.ADMIN)
+  @UseMiddleware(PermissionsMiddleware)
   @Query(() => [User])
   async getAllUsers(): Promise<User[]> {
     return await this.userService.getAll();
   }
 
   @Authorized()
+  @UseMiddleware(PermissionsMiddleware)
   @Mutation(() => ChangePasswordData, { nullable: true })
   async changePassword(
     @Arg('currentPassword') currentPassword: string,
@@ -94,6 +98,7 @@ export class UserResolver {
   }
 
   @Authorized()
+  @UseMiddleware(PermissionsMiddleware)
   @Mutation(() => User, { nullable: true })
   async updateProfile(@Arg('data') updateProfileData: UpdateProfileInput, @Ctx() ctx: ResolverContext): Promise<User> {
     const user = await this.userService.updateUserProfile(ctx.req.session!.userId, updateProfileData);
@@ -101,6 +106,7 @@ export class UserResolver {
   }
 
   @Authorized()
+  @UseMiddleware(PermissionsMiddleware)
   @Mutation(() => Activate2faData)
   async activate2fa(@Ctx() ctx: ResolverContext): Promise<Activate2faData> {
     const user = await this.userService.findById(ctx.req.session!.userId);
@@ -123,6 +129,7 @@ export class UserResolver {
   }
 
   @Authorized()
+  @UseMiddleware(PermissionsMiddleware)
   @Mutation(() => Boolean)
   async verifyOrDeactivate2fa(
     @Arg('token') token: string,

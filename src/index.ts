@@ -88,12 +88,12 @@ const app = express();
         secure: NODE_ENV === 'production',
         maxAge: 1000 * 60 * 15, // 15min
       },
-    })
+    }),
   );
 
   server.applyMiddleware({ app, path: GRAPHQL_ENDPOINT });
 
   app.listen({ port: SERVER_PORT }, () =>
-    logger.info(`Server is running on http://localhost:4000${server.graphqlPath}`)
+    logger.info(`Server is running on http://localhost:4000${server.graphqlPath}`),
   );
 })();
