@@ -34,7 +34,7 @@ export class User {
   lastName: string;
 
   @Field(() => Role)
-  @Column({ default: Role.USER })
+  @Column({ type: 'enum', enum: Role, default: Role.USER })
   role: Role;
 
   @Field()
