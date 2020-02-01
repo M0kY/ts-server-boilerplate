@@ -5,14 +5,15 @@ import { User } from '../modules/entity/User';
 import { Role } from '../types/Roles';
 import { CustomError, getErrorByKey, ERROR_USER_NOT_ACTIVE } from '../constants/errorCodes';
 
-export const authChecker: AuthChecker<ResolverContext> = async ({ context }, roles) => {
+export const authChecker: AuthChecker<ResolverContext> = async ({ context, info }, roles) => {
   const userRepository = getRepository(User);
   const user = await userRepository.findOne({ id: context.req.session!.userId });
   if (!user) {
     return false;
   }
 
-  if (!user.activated) {
+  // Ignore check for "me" resolver to be able to fetch user data
+  if (!user.activated && info.fieldName !== 'me') {
     throw new CustomError(getErrorByKey(ERROR_USER_NOT_ACTIVE));
   }
 
