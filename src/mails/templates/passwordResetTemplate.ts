@@ -4,8 +4,9 @@ import { USER_RESET_PASSWORD_PREFIX } from '../../constants/redisPrefixes';
 import { logger } from '../../utils/logger';
 import { CustomError, getErrorByKey, ERROR_WHILE_REDIS_SET } from '../../constants/errorCodes';
 import { CLIENT_URL } from '../../config/envConfig';
+import { IMailTemplate } from '../../types/Mailer';
 
-const mailContent = async (userId: number) => {
+const passwordResetTemplate: IMailTemplate = async userId => {
   const resetPasswordToken = v4();
   // Set token to be valid for 1 day
   await redis.set(USER_RESET_PASSWORD_PREFIX + resetPasswordToken, userId, 'ex', 60 * 60 * 24).catch((error: Error) => {
@@ -13,10 +14,12 @@ const mailContent = async (userId: number) => {
     throw new CustomError(getErrorByKey(ERROR_WHILE_REDIS_SET));
   });
 
-  return `<p>Activation code: ${CLIENT_URL}/reset-password/${userId}/${resetPasswordToken}</p>`;
+  const html = `<p>Activation code: ${CLIENT_URL}/reset-password/${userId}/${resetPasswordToken}</p>`;
+
+  return {
+    subject: 'Reset password',
+    html,
+  };
 };
 
-module.exports = {
-  subject: 'Reset password',
-  html: mailContent,
-};
+export default passwordResetTemplate;

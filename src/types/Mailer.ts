@@ -1,10 +1,11 @@
 import { User } from '../modules/entity/User';
 
-export enum MailTemplateType {
-  ACCOUNT_ACTIVATION = 'activation',
-  PASSWORD_RESET = 'passwordReset',
+export type MailReceiver = Partial<User>;
+
+export interface IMailTemplate {
+  (userId: number): Promise<{ subject: string; html: string }>;
 }
 
 export interface SendMailInput {
-  (receiver: Partial<User>, templateType: MailTemplateType): Promise<void>;
+  (receiver: MailReceiver, templateType: IMailTemplate): Promise<void>;
 }

@@ -5,8 +5,7 @@ import { User } from '../entity/User';
 import { ResolverContext } from '../../types/ResolverContext';
 import { comparePasswords, hashPassword } from '../../utils/crypto';
 import { SESSION_COOKIE_NAME } from '../../config/envConfig';
-import { sendMail } from '../../mails/mailer';
-import { MailTemplateType } from '../../types/Mailer';
+import { Mail } from '../../mails/mailer';
 import { redis } from '../../config/redis';
 import { USER_ACTIVATION_PREFIX, USER_RESET_PASSWORD_PREFIX } from '../../constants/redisPrefixes';
 import {
@@ -65,7 +64,7 @@ export class AuthResolver {
   async register(@Args() { username, email, password }: RegisterInput): Promise<User> {
     const user = await this.userService.createUser({ username, email, password });
 
-    sendMail(user, MailTemplateType.ACCOUNT_ACTIVATION);
+    Mail.sendPasswordResetMail(user);
 
     return user;
   }
@@ -168,7 +167,7 @@ export class AuthResolver {
   async resendActivationLink(@Arg('email') email: string): Promise<Boolean> {
     const user = await this.userService.findByEmail(email);
     if (user && !user.activated) {
-      sendMail(user, MailTemplateType.ACCOUNT_ACTIVATION);
+      Mail.sendActivationMail(user);
     }
 
     return true;
@@ -178,7 +177,7 @@ export class AuthResolver {
   async resetPasswordRequest(@Arg('email') email: string): Promise<Boolean> {
     const user = await this.userService.findByEmail(email);
     if (user) {
-      sendMail(user, MailTemplateType.PASSWORD_RESET);
+      Mail.sendPasswordResetMail(user);
     }
 
     return true;

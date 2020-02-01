@@ -4,8 +4,9 @@ import { USER_ACTIVATION_PREFIX } from '../../constants/redisPrefixes';
 import { logger } from '../../utils/logger';
 import { CustomError, getErrorByKey, ERROR_WHILE_REDIS_SET } from '../../constants/errorCodes';
 import { CLIENT_URL } from '../../config/envConfig';
+import { IMailTemplate } from '../../types/Mailer';
 
-const mailContent = async (userId: number) => {
+const activationMailTemplate: IMailTemplate = async userId => {
   const activationToken = v4();
   // Set token to be valid for 1 day
   await redis.set(USER_ACTIVATION_PREFIX + activationToken, userId, 'ex', 60 * 60 * 24).catch((error: Error) => {
@@ -13,10 +14,12 @@ const mailContent = async (userId: number) => {
     throw new CustomError(getErrorByKey(ERROR_WHILE_REDIS_SET));
   });
 
-  return `<p>Activation code: ${CLIENT_URL}/activate/${userId}/${activationToken}</p>`;
+  const html = `<p>Activation code: ${CLIENT_URL}/activate/${userId}/${activationToken}</p>`;
+
+  return {
+    subject: 'Activate account',
+    html,
+  };
 };
 
-module.exports = {
-  subject: 'Activate account',
-  html: mailContent,
-};
+export default activationMailTemplate;
