@@ -16,4 +16,4 @@ const options: RedisOptions = {
   },
 };
 
-export const redis: any = new Redis(options);
+export const redis: Redis.Redis = new Redis(options);
