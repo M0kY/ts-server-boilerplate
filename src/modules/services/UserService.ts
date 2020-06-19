@@ -55,7 +55,7 @@ export class UserService {
   }
 
   async createUser(data: RegisterInput) {
-    let user = new User();
+    const user = new User();
 
     user.username = data.username.toLowerCase();
     user.displayName = data.username;

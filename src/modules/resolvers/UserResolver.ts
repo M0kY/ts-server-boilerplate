@@ -64,7 +64,7 @@ export class UserResolver {
     @Arg('currentPassword') currentPassword: string,
     @Arg('newPassword') newPassword: string,
     @Ctx() ctx: ResolverContext,
-    @Arg('token', { nullable: true }) token?: string,
+    @Arg('token', { nullable: true }) token?: string
   ): Promise<ChangePasswordData> {
     const user = await this.userService.findById(ctx.req.session!.userId);
 
@@ -134,8 +134,8 @@ export class UserResolver {
   async verifyOrDeactivate2fa(
     @Arg('token') token: string,
     @Arg('enable') enable: boolean,
-    @Ctx() ctx: ResolverContext,
-  ): Promise<Boolean> {
+    @Ctx() ctx: ResolverContext
+  ): Promise<boolean> {
     const user = await this.userService.findById(ctx.req.session!.userId);
 
     if (!user.secret2fa) {

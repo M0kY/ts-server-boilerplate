@@ -74,7 +74,7 @@ export class AuthResolver {
     @Arg('username') username: string,
     @Arg('password') password: string,
     @Ctx() ctx: ResolverContext,
-    @Arg('token', { nullable: true }) token?: string,
+    @Arg('token', { nullable: true }) token?: string
   ): Promise<User | null> {
     const user = await this.userService.findByUsernameOrEmail(username);
 
@@ -108,16 +108,16 @@ export class AuthResolver {
       }
     }
 
-    await this.userService.resetLoginAttempts(user.id);
+    await this.userService.resetLoginAttempts(user.id).then(() => (user.loginAttempts = 0));
     ctx.req.session!.userId = user.id;
 
     return user;
   }
 
   @Mutation(() => Boolean)
-  logout(@Ctx() ctx: ResolverContext): Promise<Boolean> {
+  logout(@Ctx() ctx: ResolverContext): Promise<boolean> {
     return new Promise((resolve, reject) => {
-      if (!ctx.req.session!.userId) {
+      if (ctx.req.session?.userId) {
         throw new CustomError(getErrorByKey(ERROR_USER_NOT_LOGGED_IN));
       } else {
         ctx.req.session!.destroy(error => {
@@ -164,7 +164,7 @@ export class AuthResolver {
   }
 
   @Mutation(() => Boolean)
-  async resendActivationLink(@Arg('email') email: string): Promise<Boolean> {
+  async resendActivationLink(@Arg('email') email: string): Promise<boolean> {
     const user = await this.userService.findByEmail(email);
     if (user && !user.activated) {
       Mail.sendActivationMail(user);
@@ -174,7 +174,7 @@ export class AuthResolver {
   }
 
   @Mutation(() => Boolean)
-  async resetPasswordRequest(@Arg('email') email: string): Promise<Boolean> {
+  async resetPasswordRequest(@Arg('email') email: string): Promise<boolean> {
     const user = await this.userService.findByEmail(email);
     if (user) {
       Mail.sendPasswordResetMail(user);

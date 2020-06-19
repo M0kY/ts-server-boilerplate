@@ -10,12 +10,13 @@
   "scripts": {
     "start": "node ./dist/index.js",
     "build": "tsc -b",
+    "test": "lint-staged && eslint --max-warnings 0 .",
     "dev": "ts-node-dev --respawn src/index.ts"
   },
   "author": "Moreno Vračar",
   "license": "ISC",
   "dependencies": {
-    "apollo-server-express": "^2.13.1",
+    "apollo-server-express": "^2.15.0",
     "bcrypt": "^5.0.0",
     "class-validator": "^0.12.2",
     "compression": "^1.7.4",
@@ -24,10 +25,10 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-session": "^1.17.1",
-    "graphql": "^15.0.0",
-    "helmet": "^3.22.0",
-    "ioredis": "^4.17.1",
-    "nodemailer": "^6.4.6",
+    "graphql": "^15.1.0",
+    "helmet": "^3.23.1",
+    "ioredis": "^4.17.3",
+    "nodemailer": "^6.4.10",
     "otplib": "^12.0.1",
     "pg": "^8.2.1",
     "reflect-metadata": "^0.1.13",
@@ -36,7 +37,7 @@
     "typeorm": "^0.2.25",
     "uuid": "^8.1.0",
     "winston": "^3.2.1",
-    "winston-daily-rotate-file": "^4.4.2"
+    "winston-daily-rotate-file": "^4.5.0"
   },
   "devDependencies": {
     "@types/bcrypt": "3.0.0",
@@ -47,12 +48,29 @@
     "@types/express-session": "1.17.0",
     "@types/graphql": "^14.5.0",
     "@types/helmet": "0.0.47",
-    "@types/ioredis": "^4.16.2",
-    "@types/node": "^14.0.4",
+    "@types/ioredis": "^4.16.6",
+    "@types/node": "^14.0.13",
     "@types/nodemailer": "6.4.0",
     "@types/uuid": "8.0.0",
+    "@typescript-eslint/eslint-plugin": "^3.3.0",
+    "@typescript-eslint/parser": "^3.3.0",
+    "eslint": "^7.3.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "husky": "^4.2.5",
+    "lint-staged": "^10.2.11",
     "ts-node": "8.10.2",
-    "ts-node-dev": "1.0.0-pre.45",
+    "ts-node-dev": "^1.0.0-pre.49",
     "typescript": "3.9.5"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "echo 'Beep Bop... The time of man has come to the end...' && npm test && echo 'GG! Commiting now...'"
+    }
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "eslint --fix"
+    ]
   }
 }
