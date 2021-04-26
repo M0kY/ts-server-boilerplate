@@ -40,7 +40,7 @@
     "winston-daily-rotate-file": "^4.5.0"
   },
   "devDependencies": {
-    "@types/bcrypt": "3.0.0",
+    "@types/bcrypt": "3.0.1",
     "@types/bcryptjs": "2.4.2",
     "@types/compression": "1.7.0",
     "@types/connect-redis": "0.0.14",
